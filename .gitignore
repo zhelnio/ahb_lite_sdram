@@ -1,0 +1,26 @@
+
+# common ignore
+*.htm
+*.html
+*.jpg
+*.txt
+
+#modelsim ignore
+sim/
+
+# quartus ignore
+greybox_tmp/
+db/
+incremental_db/
+*.pof
+*.sld
+*.done
+*.smsg
+*.jdi
+*.pin
+*.qws
+*.sof
+*.rpt
+*.summary
+*.cdf
+*stp

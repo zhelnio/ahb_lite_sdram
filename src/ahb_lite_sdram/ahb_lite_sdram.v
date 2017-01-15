@@ -1,0 +1,270 @@
+
+
+module ahb_lite_sdram
+#(
+    parameter ADDR_BITS     = 13,
+    parameter ROW_BITS      = 13,
+    parameter COL_BITS      = 10,
+    parameter DQ_BITS       = 16,
+    parameter DM_BITS       = 2,
+    parameter BA_BITS       = 2,
+    parameter HADDR_BITS    = (ROW_BITS + COL_BITS + BA_BITS)
+)
+(
+    //ABB-Lite side
+    input                       HCLK,    
+    input                       HRESETn,
+    input [HADDR_BITS - 1 : 0]  HADDR,
+    input       [ 2:0]          HBURST,
+    input                       HSEL,
+    input       [ 2:0]          HSIZE,
+    input       [ 1:0]          HTRANS,
+    input       [31:0]          HWDATA,
+    input                       HWRITE,
+    output  reg [31:0]          HRDATA,
+    output                      HREADY,
+    output                      HRESP,
+
+    //SDRAM side
+    output                      CKE,
+    output                      CSn,
+    output                      RASn,
+    output                      CASn,
+    output                      WEn,
+    output  reg [ADDR_BITS - 1 : 0] ADDR,
+    output  reg [BA_BITS - 1 : 0]   BA,
+    inout   [DQ_BITS - 1 : 0]   DQ,
+    output  [DM_BITS - 1 : 0]   DQM
+);
+
+    //FSM states
+    parameter   S_IDLE              = 0,    /* Inited and waitong for AHB-Lite request */
+
+                S_INIT0_nCKE        = 1,    /* First step after HW reset */
+                S_INIT1_nCKE        = 2,    /* Holding CKE LOW for DELAY_nCKE before init steps */
+                S_INIT2_CKE         = 3,    /* Bringing CKE HIGH */
+                S_INIT3_NOP         = 4,    /* NOP after CKE is HIGH */
+                S_INIT4_PRECHALL    = 5,    /* Doing PRECHARGE */
+                S_INIT5_NOP         = 6,    /* Waiting for DELAY_tRP after PRECHARGE */
+                S_INIT6_PREREF      = 7,    /* Setting AUTO_REFRESH count*/
+                S_INIT7_AUTOREF     = 8,    /* Doing AUTO_REFRESH */
+                S_INIT8_NOP         = 9,    /* Waiting for DELAY_tRFC after AUTO_REFRESH */
+                S_INIT9_LMR         = 10,   /* Doing LOAD_MODE_REGISTER with CAS=2, BL=2, Seq  */
+                S_INIT10_NOP        = 11,   /* Waiting for DELAY_tMRD after LOAD_MODE_REGISTER */
+
+                S_READ0_ACT         = 20,   /* Doing ACTIVE */
+                S_READ1_NOP         = 21,   /* Waiting for DELAY_tRCD after ACTIVE */
+                S_READ2_READ        = 22,   /* Doing READ with Auto precharge */
+                S_READ3_NOP         = 23,   /* Waiting for DELAY_tCAS after READ */
+                S_READ4_RD0         = 24,   /* Reading 1st word */
+                S_READ5_RD1         = 25,   /* Reading 2nd word */
+                S_READ6_NOP         = 26,   /* Waiting for DELAY_afterREAD - it depends on tRC */
+
+                S_WRITE0_ACT        = 30,   /* Doing ACTIVE */
+                S_WRITE1_NOP        = 31,   /* Waiting for DELAY_tRCD after ACTIVE */
+                S_WRITE2_WR0        = 32,   /* Doing Write with Auto precharge, writing 1st word */
+                S_WRITE3_WR1        = 33,   /* Writing 2nd word */
+                S_WRITE4_NOP        = 34,   /* Waiting for DELAY_afterWRITE - it depends on tRC */
+
+                S_AREF0_AUTOREF     = 40,   /* Doing AUTO_REFRESH */
+                S_AREF1_NOP         = 41;   /* Waiting for DELAY_tRFC after AUTO_REFRESH */
+
+    //TODO: make delays calculated from time params
+    // delay params depends on Datasheet values, frequency and _auxiliary_states_(commands)_count!
+    parameter   DELAY_nCKE          = 10000,    /* Init delay before bringing CKE high */
+                DELAY_tREF          = 12000, //6300000,  /* Refresh period */
+                DELAY_tRP           = 2,        /* PRECHARGE command period */
+                DELAY_tRFC          = 7,        /* AUTO_REFRESH period */
+                DELAY_tMRD          = 2,        /* LOAD_MODE_REGISTER to ACTIVE or REFRESH command */
+                DELAY_tRCD          = 2,        /* ACTIVE-to-READ or WRITE delay */
+                DELAY_tCAS          = 0,        /* CAS delay */
+                DELAY_tRC           = 7,        /* ACTIVE-to-ACTIVE command period */
+                DELAY_afterREAD     = 2,        /* depends on tRC for READ with auto precharge command */
+                DELAY_afterWRITE    = 2,        /* depends on tRC for WRITE with auto precharge command */
+                COUNT_initAutoRef   = 2;        /* count of AUTO_REFRESH during Init operation */
+                
+
+
+    reg     [5:0]       State, Next;
+    reg     [24:0]      delay_u;
+    reg     [4:0]       delay_n;
+    reg     [3:0]       repeat_cnt;
+
+    reg     [HADDR_BITS - 1 : 0] HADDR_old;
+    reg                          HWRITE_old;
+    reg     [31:0]               DATA;
+    reg     [DQ_BITS - 1 : 0]    DQreg;
+
+    assign  DQ = DQreg;
+    
+    assign  HRESP  = 1'b0;   
+    assign  HREADY = (State == S_IDLE);
+
+    wire    NeedAction          = (HADDR_old != HADDR || HWRITE_old != HWRITE);
+    wire    NeedRefresh         = ~|delay_u;
+    wire    DelayFinished       = ~|delay_n;
+    wire    BigDelayFinished    = ~|delay_u;
+    wire    RepeatsFinished     = ~|repeat_cnt;
+
+    always @ (posedge HCLK) begin
+        if (~HRESETn)
+            State <= S_INIT0_nCKE;
+        else
+            State <= Next;
+    end
+
+    always @ (*) begin
+
+        //State change decision
+        case(State)
+            S_IDLE              :   Next = NeedRefresh  ? S_AREF0_AUTOREF : (
+                                           ~NeedAction  ? S_IDLE : (
+                                           HWRITE       ? S_WRITE0_ACT : S_READ0_ACT));
+
+            S_INIT0_nCKE        :   Next = S_INIT1_nCKE;
+            S_INIT1_nCKE        :   Next = BigDelayFinished ? S_INIT2_CKE : S_INIT1_nCKE;
+            S_INIT2_CKE         :   Next = S_INIT3_NOP;
+            S_INIT3_NOP         :   Next = S_INIT4_PRECHALL;
+            S_INIT4_PRECHALL    :   Next = S_INIT5_NOP;
+            S_INIT5_NOP         :   Next = DelayFinished ? S_INIT6_PREREF : S_INIT5_NOP;
+            S_INIT6_PREREF      :   Next = S_INIT7_AUTOREF;
+            S_INIT7_AUTOREF     :   Next = S_INIT8_NOP;
+            S_INIT8_NOP         :   Next = ~DelayFinished ? S_INIT8_NOP : (
+                                           RepeatsFinished ? S_INIT9_LMR : S_INIT7_AUTOREF );
+            S_INIT9_LMR         :   Next = S_INIT10_NOP;
+            S_INIT10_NOP        :   Next = DelayFinished ? S_IDLE : S_INIT10_NOP;
+
+            S_READ0_ACT         :   Next = S_READ1_NOP;
+            S_READ1_NOP         :   Next = DelayFinished ? S_READ2_READ : S_READ1_NOP;
+            S_READ2_READ        :   Next = S_READ3_NOP;
+            S_READ3_NOP         :   Next = DelayFinished ? S_READ4_RD0 : S_READ3_NOP;
+            S_READ4_RD0         :   Next = S_READ5_RD1;
+            S_READ5_RD1         :   Next = S_READ6_NOP;
+            S_READ6_NOP         :   Next = DelayFinished ? S_IDLE : S_READ6_NOP;
+
+            S_WRITE0_ACT        :   Next = S_WRITE1_NOP;
+            S_WRITE1_NOP        :   Next = DelayFinished ? S_WRITE2_WR0 : S_WRITE1_NOP;
+            S_WRITE2_WR0        :   Next = S_WRITE3_WR1;
+            S_WRITE3_WR1        :   Next = S_WRITE4_NOP;
+            S_WRITE4_NOP        :   Next = DelayFinished ? S_IDLE : S_WRITE4_NOP;
+
+            S_AREF0_AUTOREF     :   Next = S_AREF1_NOP;
+            S_AREF1_NOP         :   Next = ~DelayFinished ? S_AREF1_NOP : (
+                                           ~NeedAction    ? S_IDLE : (
+                                           HWRITE         ? S_WRITE0_ACT : S_READ0_ACT));
+        endcase
+    end
+
+    always @ (posedge HCLK) begin
+        
+        //short delay operations
+        case(State)
+            S_IDLE              :   ;
+
+            S_INIT0_nCKE        :   ;
+            S_INIT1_nCKE        :   ;
+            S_INIT2_CKE         :   ;
+            S_INIT3_NOP         :   ;
+            S_INIT4_PRECHALL    :   delay_n <= DELAY_tRP;
+            S_INIT5_NOP         :   delay_n <= delay_n - 1;
+            S_INIT6_PREREF      :   repeat_cnt <= COUNT_initAutoRef;
+            S_INIT7_AUTOREF     :   begin delay_n <= DELAY_tRFC; repeat_cnt <= repeat_cnt - 1; end
+            S_INIT8_NOP         :   delay_n <= delay_n - 1;
+            S_INIT9_LMR         :   delay_n <= DELAY_tMRD; 
+            S_INIT10_NOP        :   delay_n <= delay_n - 1;
+
+            S_READ0_ACT         :   delay_n <= DELAY_tRCD;
+            S_READ1_NOP         :   delay_n <= delay_n - 1;
+            S_READ2_READ        :   delay_n <= DELAY_tCAS;
+            S_READ3_NOP         :   delay_n <= delay_n - 1;
+            S_READ4_RD0         :   ;
+            S_READ5_RD1         :   delay_n <= DELAY_afterREAD;
+            S_READ6_NOP         :   delay_n <= delay_n - 1;
+
+            S_WRITE0_ACT        :   delay_n <= DELAY_tRCD;
+            S_WRITE1_NOP        :   delay_n <= delay_n - 1;
+            S_WRITE2_WR0        :   ;
+            S_WRITE3_WR1        :   delay_n <= DELAY_afterWRITE;
+            S_WRITE4_NOP        :   delay_n <= delay_n - 1;
+
+            S_AREF0_AUTOREF     :   begin delay_n <= DELAY_tRFC; end
+            S_AREF1_NOP         :   delay_n <= delay_n - 1;
+        endcase
+
+        //long delay operations
+        case(State)
+            S_INIT0_nCKE        :   delay_u <= DELAY_nCKE;
+            S_INIT7_AUTOREF     :   delay_u <= DELAY_tREF;
+            S_AREF0_AUTOREF     :   delay_u <= DELAY_tREF;
+            default             :   if (|delay_u) delay_u <= delay_u - 1;
+        endcase
+
+
+        //data and addr operations
+        case(State)
+            S_IDLE              :   if (HSEL) begin 
+                                        HADDR_old   <= HADDR; 
+                                        HWRITE_old  <= HWRITE; 
+                                    end
+
+            S_INIT0_nCKE        :   { HADDR_old, HWRITE_old } <= { 33 {1'b0}};
+
+            S_READ4_RD0         :   DATA [15:0] <= DQ;
+            S_READ5_RD1         :   HRDATA <= { DQ, DATA [15:0] };
+            S_WRITE0_ACT        :   DATA <= HWDATA;
+            default             :   ;
+        endcase
+
+    end
+
+    // ADDR = { BANKS, ROWS, COLUMNS }
+    wire  [COL_BITS - 1 : 0]  AddrColumn  = HADDR_old [ COL_BITS - 1 : 0 ];
+    wire  [ROW_BITS - 1 : 0]  AddrRow     = HADDR_old [ ROW_BITS + COL_BITS - 1 : COL_BITS ];
+    wire  [BA_BITS  - 1 : 0]  AddrBank    = HADDR_old [ HADDR_BITS - 1 : ROW_BITS + COL_BITS ];
+
+    reg    [ 4 : 0 ]    cmd;
+    assign  { CKE, CSn, RASn, CASn, WEn } = cmd;
+
+    parameter   CMD_NOP_NCKE        = 5'b00111,
+                CMD_NOP             = 5'b10111,
+                CMD_PRECHARGEALL    = 5'b10010,
+                CMD_AUTOREFRESH     = 5'b10001,
+                CMD_LOADMODEREG     = 5'b10000,
+                CMD_ACTIVE          = 5'b10011,
+                CMD_READ            = 5'b10101,
+                CMD_WRITE           = 5'b10100;
+
+    parameter   SDRAM_MODE          = 13'b0000000100001; // CAS=2, BL=2, Seq
+    parameter   SDRAM_ALL_BANKS     = (1 << 10);         // A[10]=1
+    parameter   SDRAM_AUTOPRCH_FLAG = (1 << 10);         // A[10]=1
+
+    // set SDRAM i/o
+    assign DQM = { DM_BITS { 1'b0 }};
+
+    always @ (*) begin
+        case(State)
+            default             :   cmd = CMD_NOP;
+            S_INIT0_nCKE        :   cmd = CMD_NOP_NCKE;
+            S_INIT1_nCKE        :   cmd = CMD_NOP_NCKE;
+            S_INIT4_PRECHALL    :   begin cmd = CMD_PRECHARGEALL;   ADDR = SDRAM_ALL_BANKS; end
+            S_INIT7_AUTOREF     :   cmd = CMD_AUTOREFRESH;
+            S_INIT9_LMR         :   begin cmd = CMD_LOADMODEREG;    ADDR = SDRAM_MODE; end
+
+            S_READ0_ACT         :   begin cmd = CMD_ACTIVE;         ADDR = AddrRow;     BA = AddrBank; end
+            S_READ2_READ        :   begin cmd = CMD_READ;           ADDR = AddrColumn | SDRAM_AUTOPRCH_FLAG;  BA = AddrBank; end
+
+            S_WRITE0_ACT        :   begin cmd = CMD_ACTIVE;         ADDR = AddrRow;     BA = AddrBank; end
+            S_WRITE2_WR0        :   begin cmd = CMD_WRITE;          ADDR = AddrColumn | SDRAM_AUTOPRCH_FLAG;  BA = AddrBank; end
+
+            S_AREF0_AUTOREF     :   cmd = CMD_AUTOREFRESH;
+        endcase
+
+        case(State)
+            default             :   DQreg = { DQ_BITS { 1'bz }};
+            S_WRITE2_WR0        :   DQreg = DATA [ 15:0  ];
+            S_WRITE3_WR1        :   DQreg = DATA [ 31:16 ];
+        endcase
+    end
+
+
+endmodule
