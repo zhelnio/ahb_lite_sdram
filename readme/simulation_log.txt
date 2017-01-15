@@ -1,0 +1,34 @@
+# test_ahb_lite_sdram.sdram0 : at time   75085.0 ns AREF : Auto Refresh
+# test_ahb_lite_sdram.sdram0 : at time   75152.0 ns AREF : Auto Refresh
+# test_ahb_lite_sdram.sdram0 : at time   75220.0 ns LMR  : Load Mode Register
+# test_ahb_lite_sdram.sdram0 :                             CAS Latency      = 2
+# test_ahb_lite_sdram.sdram0 :                             Burst Length     = 2
+# test_ahb_lite_sdram.sdram0 :                             Burst Type       = Sequential
+# test_ahb_lite_sdram.sdram0 :                             Write Burst Mode = Programmed Burst Length
+#   75251.0 ns READEN HADDR=00000000 HRDATA=xxxxxxxx
+# test_ahb_lite_sdram.sdram0 : at time   75257.0 ns ACT  : Bank = 0 Row =    0
+# test_ahb_lite_sdram.sdram0 : at time   75301.0 ns READ : Bank = 0 Row =    0, Col =    2, Dqm = 00, Data = xxxx
+# test_ahb_lite_sdram.sdram0 : at time   75302.0 ns NOTE : Start Internal Auto Precharge for Bank 0
+# test_ahb_lite_sdram.sdram0 : at time   75308.0 ns READ : Bank = 0 Row =    0, Col =    3, Dqm = 00, Data = xxxx
+#   75341.0 ns READEN HADDR=00000002 HRDATA=xxxxxxxx
+# test_ahb_lite_sdram.sdram0 : at time   75347.0 ns ACT  : Bank = 0 Row =    0
+# test_ahb_lite_sdram.sdram0 : at time   75377.0 ns WRITE: Bank = 0 Row =    0, Col =    4, Data = 0004
+# test_ahb_lite_sdram.sdram0 : at time   75385.0 ns WRITE: Bank = 0 Row =    0, Col =    5, Data = 0000
+# test_ahb_lite_sdram.sdram0 : at time   75392.0 ns NOTE : Start Internal Auto Precharge for Bank 0
+#   75416.0 ns WRITEN HADDR=00000004 HWDATA=00000004
+# test_ahb_lite_sdram.sdram0 : at time   75422.0 ns ACT  : Bank = 0 Row =    0
+# test_ahb_lite_sdram.sdram0 : at time   75452.0 ns WRITE: Bank = 0 Row =    0, Col =    6, Data = 0006
+# test_ahb_lite_sdram.sdram0 : at time   75460.0 ns WRITE: Bank = 0 Row =    0, Col =    7, Data = 0000
+# test_ahb_lite_sdram.sdram0 : at time   75467.0 ns NOTE : Start Internal Auto Precharge for Bank 0
+#   75491.0 ns WRITEN HADDR=00000006 HWDATA=00000006
+# test_ahb_lite_sdram.sdram0 : at time   75497.0 ns ACT  : Bank = 0 Row =    0
+# test_ahb_lite_sdram.sdram0 : at time   75541.0 ns READ : Bank = 0 Row =    0, Col =    4, Dqm = 00, Data = 0004
+# test_ahb_lite_sdram.sdram0 : at time   75542.0 ns NOTE : Start Internal Auto Precharge for Bank 0
+# test_ahb_lite_sdram.sdram0 : at time   75548.0 ns READ : Bank = 0 Row =    0, Col =    5, Dqm = 00, Data = 0000
+#   75581.0 ns READEN HADDR=00000004 HRDATA=00000004
+# test_ahb_lite_sdram.sdram0 : at time   75587.0 ns ACT  : Bank = 0 Row =    0
+# test_ahb_lite_sdram.sdram0 : at time   75631.0 ns READ : Bank = 0 Row =    0, Col =    6, Dqm = 00, Data = 0006
+# test_ahb_lite_sdram.sdram0 : at time   75632.0 ns NOTE : Start Internal Auto Precharge for Bank 0
+# test_ahb_lite_sdram.sdram0 : at time   75638.0 ns READ : Bank = 0 Row =    0, Col =    7, Dqm = 00, Data = 0000
+#   75671.0 ns READEN HADDR=00000006 HRDATA=00000006
+# test_ahb_lite_sdram.sdram0 : at time  165167.0 ns AREF : Auto Refresh
