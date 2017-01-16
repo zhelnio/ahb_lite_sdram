@@ -1,23 +1,21 @@
 
 vlib work
 
-set a0 -vlog01compat
-set a1 +define+den512Mb
-set a2 +define+sg75
-set a3 +define+x16
-set a4 +define+SIMULATION
+set p0 -vlog01compat
+set p1 +define+den512Mb
+set p2 +define+sg75
+set p3 +define+x16
+set p4 +define+SIMULATION
 
-set a5 +incdir+../../src/testbench/sdr_sdram
-set a6 +incdir+../../src/ahb_lite_sdram
-# set a6 +incdir+../../src/testbench/sdr_sdram/sdr_parameters.vh
-set a7 +incdir+../../src/testbench/sdr_sdram/sdv.v
-set a8 ../../src/testbench/sdr_sdram/*.v
-set a10 ../../src/ahb_lite_sdram/*.v
-# set a8 ../../src/testbench/sdr_sdram/sdv.v
-set a9 ../../src/testbench/test_ahb_lite_sdram.v
+set i0 +incdir+../../src/ahb_lite_sdram
+set i1 +incdir+../../src/testbench
+set i2 +incdir+../../src/testbench/sdr_sdram
 
-vlog $a0 $a1 $a2 $a3 $a4 $a5 $a6 $a7 $a8 $a10 $a9
-#  
+set s0 ../../src/ahb_lite_sdram/*.v
+set s1 ../../src/testbench/*.v
+set s2 ../../src/testbench/sdr_sdram/*.v
+
+vlog $p0 $p1 $p2 $p3 $p4  $i0 $i1 $i2  $s0 $s1 $s2
 
 vsim work.test_ahb_lite_sdram
 add wave -radix hex sim:/test_ahb_lite_sdram/*
