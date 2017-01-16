@@ -5,39 +5,52 @@
 
 module ahb_lite_sdram
 #(
-    parameter ADDR_BITS     = 13,
-    parameter ROW_BITS      = 13,
-    parameter COL_BITS      = 10,
-    parameter DQ_BITS       = 16,
-    parameter DM_BITS       = 2,
-    parameter BA_BITS       = 2,
-    parameter HADDR_BITS    = (ROW_BITS + COL_BITS + BA_BITS)
+    parameter   ADDR_BITS           = 13,       /* SDRAM Address input size */
+                ROW_BITS            = 13,       /* SDRAM Row address size */
+                COL_BITS            = 10,       /* SDRAM Column address size */
+                DQ_BITS             = 16,       /* SDRAM Data i/o size, only x16 supported */
+                DM_BITS             = 2,        /* SDRAM Data i/o mask size */
+                BA_BITS             = 2,        /* SDRAM Bank address size */
+                HADDR_BITS          = (ROW_BITS + COL_BITS + BA_BITS),
+
+    // delay params depends on Datasheet values, frequency and _auxiliary_states_(commands)_count!
+    parameter   DELAY_nCKE          = 10000,    /* Init delay before bringing CKE high */
+                DELAY_tREF          = 6300000,  /* Refresh period */
+                DELAY_tRP           = 2,        /* PRECHARGE command period */
+                DELAY_tRFC          = 7,        /* AUTO_REFRESH period */
+                DELAY_tMRD          = 2,        /* LOAD_MODE_REGISTER to ACTIVE or REFRESH command */
+                DELAY_tRCD          = 2,        /* ACTIVE-to-READ or WRITE delay */
+                DELAY_tCAS          = 0,        /* CAS delay CAS2=0, CAS3=1*/
+                DELAY_tRC           = 7,        /* ACTIVE-to-ACTIVE command period */
+                DELAY_afterREAD     = 2,        /* depends on tRC for READ with auto precharge command */
+                DELAY_afterWRITE    = 2,        /* depends on tRC for WRITE with auto precharge command */
+                COUNT_initAutoRef   = 2         /* count of AUTO_REFRESH during Init operation */
 )
 (
     //ABB-Lite side
-    input                       HCLK,    
-    input                       HRESETn,
-    input [HADDR_BITS - 1 : 0]  HADDR,
-    input       [ 2:0]          HBURST,
-    input                       HSEL,
-    input       [ 2:0]          HSIZE,
-    input       [ 1:0]          HTRANS,
-    input       [31:0]          HWDATA,
-    input                       HWRITE,
-    output  reg [31:0]          HRDATA,
-    output                      HREADY,
-    output                      HRESP,
+    input                               HCLK,    
+    input                               HRESETn,
+    input       [ HADDR_BITS - 1 : 0 ]  HADDR,
+    input       [  2 : 0 ]              HBURST,
+    input                               HSEL,
+    input       [  2 : 0 ]              HSIZE,
+    input       [  1 : 0 ]              HTRANS,
+    input       [ 31 : 0 ]              HWDATA,
+    input                               HWRITE,
+    output  reg [ 31 : 0 ]              HRDATA,
+    output                              HREADY,
+    output                              HRESP,
 
     //SDRAM side
-    output                      CKE,
-    output                      CSn,
-    output                      RASn,
-    output                      CASn,
-    output                      WEn,
-    output  reg [ADDR_BITS - 1 : 0] ADDR,
-    output  reg [BA_BITS - 1 : 0]   BA,
-    inout   [DQ_BITS - 1 : 0]   DQ,
-    output  [DM_BITS - 1 : 0]   DQM
+    output                              CKE,
+    output                              CSn,
+    output                              RASn,
+    output                              CASn,
+    output                              WEn,
+    output  reg [ ADDR_BITS - 1 : 0 ]   ADDR,
+    output  reg [ BA_BITS   - 1 : 0 ]   BA,
+    inout       [ DQ_BITS   - 1 : 0 ]   DQ,
+    output      [ DM_BITS   - 1 : 0 ]   DQM
 );
 
     //FSM states
@@ -72,29 +85,15 @@ module ahb_lite_sdram
                 S_AREF0_AUTOREF     = 40,   /* Doing AUTO_REFRESH */
                 S_AREF1_NOP         = 41;   /* Waiting for DELAY_tRFC after AUTO_REFRESH */
 
-    //TODO: make delays calculated from time params
-    // delay params depends on Datasheet values, frequency and _auxiliary_states_(commands)_count!
-    parameter   DELAY_nCKE          = 10000,    /* Init delay before bringing CKE high */
-                DELAY_tREF          = 12000, //6300000,  /* Refresh period */
-                DELAY_tRP           = 2,        /* PRECHARGE command period */
-                DELAY_tRFC          = 7,        /* AUTO_REFRESH period */
-                DELAY_tMRD          = 2,        /* LOAD_MODE_REGISTER to ACTIVE or REFRESH command */
-                DELAY_tRCD          = 2,        /* ACTIVE-to-READ or WRITE delay */
-                DELAY_tCAS          = 0,        /* CAS delay */
-                DELAY_tRC           = 7,        /* ACTIVE-to-ACTIVE command period */
-                DELAY_afterREAD     = 2,        /* depends on tRC for READ with auto precharge command */
-                DELAY_afterWRITE    = 2,        /* depends on tRC for WRITE with auto precharge command */
-                COUNT_initAutoRef   = 2;        /* count of AUTO_REFRESH during Init operation */
+    reg     [  5 : 0 ]              State, Next;
+    reg     [ 24 : 0 ]              delay_u;
+    reg     [  4 : 0 ]              delay_n;
+    reg     [  3 : 0 ]              repeat_cnt;
 
-    reg     [5:0]       State, Next;
-    reg     [24:0]      delay_u;
-    reg     [4:0]       delay_n;
-    reg     [3:0]       repeat_cnt;
-
-    reg     [HADDR_BITS - 1 : 0] HADDR_old;
-    reg                          HWRITE_old;
-    reg     [31:0]               DATA;
-    reg     [DQ_BITS - 1 : 0]    DQreg;
+    reg     [ HADDR_BITS - 1 : 0 ]  HADDR_old;
+    reg                             HWRITE_old;
+    reg     [ 31 : 0 ]              DATA;
+    reg     [ DQ_BITS - 1 : 0]      DQreg;
 
     assign  DQ = DQreg;
     

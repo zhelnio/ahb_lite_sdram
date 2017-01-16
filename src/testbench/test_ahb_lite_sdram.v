@@ -17,7 +17,11 @@ module test_ahb_lite_sdram;
     wire  [DQ_BITS - 1 : 0]   DQ;
     wire  [DM_BITS - 1 : 0]   DQM;
 
-    ahb_lite_sdram mem
+    ahb_lite_sdram 
+    #(
+        .DELAY_tREF (4000)
+    ) 
+    mem
     (
         .HCLK       (   HCLK        ),
         .HRESETn    (   HRESETn     ),
@@ -75,7 +79,7 @@ module test_ahb_lite_sdram;
             @(posedge HCLK);
         end
 
-        #150000 //waiting for auto_refresh
+        #70000 //waiting for auto_refresh
         $stop;
         $finish;
     end
