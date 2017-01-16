@@ -157,38 +157,20 @@ module ahb_lite_sdram
 
     always @ (posedge HCLK) begin
         
-        //short delay operations
+        //short delay and count operations
         case(State)
-            S_IDLE              :   ;
-
-            S_INIT0_nCKE        :   ;
-            S_INIT1_nCKE        :   ;
-            S_INIT2_CKE         :   ;
-            S_INIT3_NOP         :   ;
             S_INIT4_PRECHALL    :   delay_n <= DELAY_tRP;
-            S_INIT5_NOP         :   delay_n <= delay_n - 1;
             S_INIT6_PREREF      :   repeat_cnt <= COUNT_initAutoRef;
             S_INIT7_AUTOREF     :   begin delay_n <= DELAY_tRFC; repeat_cnt <= repeat_cnt - 1; end
-            S_INIT8_NOP         :   delay_n <= delay_n - 1;
             S_INIT9_LMR         :   delay_n <= DELAY_tMRD; 
-            S_INIT10_NOP        :   delay_n <= delay_n - 1;
-
             S_READ0_ACT         :   delay_n <= DELAY_tRCD;
-            S_READ1_NOP         :   delay_n <= delay_n - 1;
             S_READ2_READ        :   delay_n <= DELAY_tCAS;
-            S_READ3_NOP         :   delay_n <= delay_n - 1;
-            S_READ4_RD0         :   ;
             S_READ5_RD1         :   delay_n <= DELAY_afterREAD;
-            S_READ6_NOP         :   delay_n <= delay_n - 1;
-
             S_WRITE0_ACT        :   delay_n <= DELAY_tRCD;
-            S_WRITE1_NOP        :   delay_n <= delay_n - 1;
-            S_WRITE2_WR0        :   ;
             S_WRITE3_WR1        :   delay_n <= DELAY_afterWRITE;
-            S_WRITE4_NOP        :   delay_n <= delay_n - 1;
+            S_AREF0_AUTOREF     :   delay_n <= DELAY_tRFC;
 
-            S_AREF0_AUTOREF     :   begin delay_n <= DELAY_tRFC; end
-            S_AREF1_NOP         :   delay_n <= delay_n - 1;
+            default             :   if (|delay_n) delay_n <= delay_n - 1;
         endcase
 
         //long delay operations
@@ -198,7 +180,6 @@ module ahb_lite_sdram
             S_AREF0_AUTOREF     :   delay_u <= DELAY_tREF;
             default             :   if (|delay_u) delay_u <= delay_u - 1;
         endcase
-
 
         //data and addr operations
         case(State)
@@ -217,7 +198,7 @@ module ahb_lite_sdram
 
     end
 
-    // ADDR = { BANKS, ROWS, COLUMNS }
+    // HADDR = { BANKS, ROWS, COLUMNS }
     wire  [COL_BITS - 1 : 0]  AddrColumn  = HADDR_old [ COL_BITS - 1 : 0 ];
     wire  [ROW_BITS - 1 : 0]  AddrRow     = HADDR_old [ ROW_BITS + COL_BITS - 1 : COL_BITS ];
     wire  [BA_BITS  - 1 : 0]  AddrBank    = HADDR_old [ HADDR_BITS - 1 : ROW_BITS + COL_BITS ];

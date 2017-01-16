@@ -6,6 +6,7 @@ set a1 +define+den512Mb
 set a2 +define+sg75
 set a3 +define+x16
 set a4 +define+SIMULATION
+
 set a5 +incdir+../../src/testbench/sdr_sdram
 set a6 +incdir+../../src/ahb_lite_sdram
 # set a6 +incdir+../../src/testbench/sdr_sdram/sdr_parameters.vh
