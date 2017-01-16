@@ -1,4 +1,7 @@
-
+/* Simple SDRAM controller for MIPSfpga+ system AHB-Lite bus
+ * Copyright(c) 2016 Stanislav Zhelnio
+ * https://github.com/zhelnio/ahb_lite_sdram
+ */
 
 module ahb_lite_sdram
 #(
@@ -82,8 +85,6 @@ module ahb_lite_sdram
                 DELAY_afterREAD     = 2,        /* depends on tRC for READ with auto precharge command */
                 DELAY_afterWRITE    = 2,        /* depends on tRC for WRITE with auto precharge command */
                 COUNT_initAutoRef   = 2;        /* count of AUTO_REFRESH during Init operation */
-                
-
 
     reg     [5:0]       State, Next;
     reg     [24:0]      delay_u;
@@ -169,7 +170,6 @@ module ahb_lite_sdram
             S_WRITE0_ACT        :   delay_n <= DELAY_tRCD;
             S_WRITE3_WR1        :   delay_n <= DELAY_afterWRITE;
             S_AREF0_AUTOREF     :   delay_n <= DELAY_tRFC;
-
             default             :   if (|delay_n) delay_n <= delay_n - 1;
         endcase
 
