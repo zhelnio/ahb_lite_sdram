@@ -13,17 +13,26 @@ module ahb_lite_sdram
                 BA_BITS             = 2,        /* SDRAM Bank address size */
                 HADDR_BITS          = (ROW_BITS + COL_BITS + BA_BITS),
 
-    // delay params depends on Datasheet values, frequency and _auxiliary_states_(commands)_count!
-    parameter   DELAY_nCKE          = 10000,    /* Init delay before bringing CKE high */
-                DELAY_tREF          = 6300000,  /* Refresh period */
-                DELAY_tRP           = 2,        /* PRECHARGE command period */
-                DELAY_tRFC          = 7,        /* AUTO_REFRESH period */
-                DELAY_tMRD          = 2,        /* LOAD_MODE_REGISTER to ACTIVE or REFRESH command */
-                DELAY_tRCD          = 2,        /* ACTIVE-to-READ or WRITE delay */
-                DELAY_tCAS          = 0,        /* CAS delay CAS2=0, CAS3=1*/
-                DELAY_tRC           = 7,        /* ACTIVE-to-ACTIVE command period */
-                DELAY_afterREAD     = 2,        /* depends on tRC for READ with auto precharge command */
-                DELAY_afterWRITE    = 2,        /* depends on tRC for WRITE with auto precharge command */
+    // delay params depends on Datasheet values, frequency and FSM states count
+    parameter   DELAY_nCKE          = 14000,    /* Init delay before bringing CKE high 
+                                                   >= (T * fclk) where T    - CKE LOW init timeout 
+                                                                       fclk - clock frequency  */
+                DELAY_tREF          = 8000000,  /* Refresh period 
+                                                   <= (tREF - tRC)*fclk                        */
+                DELAY_tRP           = 1,        /* PRECHARGE command period 
+                                                   >= (tRP * fclk - 2)                         */
+                DELAY_tRFC          = 7,        /* AUTO_REFRESH period 
+                                                   >= (tRFC * fclk - 2)                        */
+                DELAY_tMRD          = 0,        /* LOAD_MODE_REGISTER to ACTIVE or REFRESH command 
+                                                   >= (tMRD * fclk - 2)                        */
+                DELAY_tRCD          = 1,        /* ACTIVE-to-READ or WRITE delay 
+                                                   >= (tRCD * fclk - 2)                        */
+                DELAY_tCAS          = 0,        /* CAS delay CAS2=0, CAS3=1 
+                                                   =  (CAS - 2)                                */
+                DELAY_afterREAD     = 3,        /* depends on tRC for READ with auto precharge command 
+                                                   >= ((tRC - tRCD) * fclk - 2 - CAS)          */
+                DELAY_afterWRITE    = 5,        /* depends on tRC for WRITE with auto precharge command 
+                                                   >= ((tRC - tRCD) * fclk - 2)                */
                 COUNT_initAutoRef   = 2         /* count of AUTO_REFRESH during Init operation */
 )
 (
