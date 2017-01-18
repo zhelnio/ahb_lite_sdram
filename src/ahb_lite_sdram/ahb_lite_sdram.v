@@ -18,7 +18,7 @@ module ahb_lite_sdram
                                                    >= (T * fclk) where T    - CKE LOW init timeout 
                                                                        fclk - clock frequency  */
                 DELAY_tREF          = 8000000,  /* Refresh period 
-                                                   <= (tREF - tRC)*fclk                        */
+                                                   <= ((tREF - tRC) * fclk)                    */
                 DELAY_tRP           = 1,        /* PRECHARGE command period 
                                                    >= (tRP * fclk - 2)                         */
                 DELAY_tRFC          = 7,        /* AUTO_REFRESH period 
