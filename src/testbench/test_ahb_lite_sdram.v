@@ -68,12 +68,12 @@ module test_ahb_lite_sdram;
             HRESETn = 1;
 
             @(posedge HCLK);
-            ahbPhase   (2, 0, St_x);
+            ahbPhaseFst(2, 0, St_x);
             ahbPhase   (4, 1, St_x);
             ahbPhase   (6, 1, 4);
             ahbPhase   (4, 0, 6);
             ahbPhase   (6, 0, St_x);
-            ahbPhase   (6, 0, St_x);
+            ahbPhaseLst(6, 0, St_x);
 
             @(posedge HCLK);
             @(posedge HCLK);

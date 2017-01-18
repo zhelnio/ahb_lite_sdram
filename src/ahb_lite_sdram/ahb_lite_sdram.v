@@ -101,6 +101,7 @@ module ahb_lite_sdram
 
     reg     [ HADDR_BITS - 1 : 0 ]  HADDR_old;
     reg                             HWRITE_old;
+    reg     [  1 : 0 ]              HTRANS_old;
     reg     [ 31 : 0 ]              DATA;
     reg     [ DQ_BITS - 1 : 0]      DQreg;
 
@@ -109,7 +110,9 @@ module ahb_lite_sdram
     assign  HRESP  = 1'b0;   
     assign  HREADY = (State == S_IDLE);
 
-    wire    NeedAction          = (HADDR_old != HADDR || HWRITE_old != HWRITE);
+    parameter HTRANS_IDLE       = 2'b0;
+
+    wire    NeedAction          = HTRANS_old != HTRANS_IDLE;
     wire    NeedRefresh         = ~|delay_u;
     wire    DelayFinished       = ~|delay_n;
     wire    BigDelayFinished    = ~|delay_u;
@@ -138,10 +141,12 @@ module ahb_lite_sdram
             S_INIT5_NOP         :   Next = DelayFinished ? S_INIT6_PREREF : S_INIT5_NOP;
             S_INIT6_PREREF      :   Next = S_INIT7_AUTOREF;
             S_INIT7_AUTOREF     :   Next = S_INIT8_NOP;
-            S_INIT8_NOP         :   Next = ~DelayFinished ? S_INIT8_NOP : (
+            S_INIT8_NOP         :   Next = ~DelayFinished  ? S_INIT8_NOP : (
                                            RepeatsFinished ? S_INIT9_LMR : S_INIT7_AUTOREF );
             S_INIT9_LMR         :   Next = S_INIT10_NOP;
-            S_INIT10_NOP        :   Next = DelayFinished ? S_IDLE : S_INIT10_NOP;
+            S_INIT10_NOP        :   Next = ~DelayFinished ? S_INIT10_NOP : (
+                                           ~NeedAction    ? S_IDLE : (
+                                           HWRITE         ? S_WRITE0_ACT : S_READ0_ACT));
 
             S_READ0_ACT         :   Next = S_READ1_NOP;
             S_READ1_NOP         :   Next = DelayFinished ? S_READ2_READ : S_READ1_NOP;
@@ -192,11 +197,13 @@ module ahb_lite_sdram
         //data and addr operations
         case(State)
             S_IDLE              :   if (HSEL) begin 
-                                        HADDR_old   <= HADDR; 
-                                        HWRITE_old  <= HWRITE; 
+                                        HADDR_old <= HADDR; HWRITE_old <= HWRITE; HTRANS_old <= HTRANS;
+                                    end
+            S_INIT10_NOP        :   if (HSEL) begin 
+                                        HADDR_old <= HADDR; HWRITE_old <= HWRITE; HTRANS_old <= HTRANS;
                                     end
 
-            S_INIT0_nCKE        :   { HADDR_old, HWRITE_old } <= { 33 {1'b0}};
+            S_INIT0_nCKE        :   { HADDR_old, HWRITE_old, HTRANS_old } <= { 35 {1'b0}};
 
             S_READ4_RD0         :   DATA [15:0] <= DQ;
             S_READ5_RD1         :   HRDATA <= { DQ, DATA [15:0] };

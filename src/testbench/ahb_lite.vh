@@ -68,4 +68,25 @@ task ahbPhase;
     end
 endtask
 
+task ahbPhaseFst;
+    input [31:0]    iNextHADDR;
+    input           iNextHWRITE;
+    input [31:0]    iHWDATA;
+    begin
+        HTRANS  = 2'b10; 
+        ahbPhase (iNextHADDR, iNextHWRITE, iHWDATA);
+    end
+endtask
+
+task ahbPhaseLst;
+    input [31:0]    iNextHADDR;
+    input           iNextHWRITE;
+    input [31:0]    iHWDATA;
+
+    begin
+        HTRANS  = 2'b00; 
+        ahbPhase (iNextHADDR, iNextHWRITE, iHWDATA);
+    end
+endtask
+
 `endif //SIMULATION
