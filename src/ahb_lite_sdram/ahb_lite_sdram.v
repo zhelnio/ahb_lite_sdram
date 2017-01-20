@@ -11,7 +11,7 @@ module ahb_lite_sdram
                 DQ_BITS             = 16,       /* SDRAM Data i/o size, only x16 supported */
                 DM_BITS             = 2,        /* SDRAM Data i/o mask size */
                 BA_BITS             = 2,        /* SDRAM Bank address size */
-                HADDR_BITS          = (ROW_BITS + COL_BITS + BA_BITS),
+                SADDR_BITS          = (ROW_BITS + COL_BITS + BA_BITS),
 
     // delay params depends on Datasheet values, frequency and FSM states count
     parameter   DELAY_nCKE          = 14000,    /* Init delay before bringing CKE high 
@@ -39,7 +39,7 @@ module ahb_lite_sdram
     //ABB-Lite side
     input                               HCLK,    
     input                               HRESETn,
-    input       [ HADDR_BITS - 1 : 0 ]  HADDR,
+    input       [ 31 : 0 ]              HADDR,
     input       [  2 : 0 ]              HBURST,
     input                               HSEL,
     input       [  2 : 0 ]              HSIZE,
@@ -99,11 +99,13 @@ module ahb_lite_sdram
     reg     [  4 : 0 ]              delay_n;
     reg     [  3 : 0 ]              repeat_cnt;
 
-    reg     [ HADDR_BITS - 1 : 0 ]  HADDR_old;
+    wire    [ SADDR_BITS - 1 : 0 ]  SADDR = HADDR [ SADDR_BITS - 1 + 1 : 1 ];
+
+    reg     [ SADDR_BITS - 1 : 0 ]  SADDR_old;
     reg                             HWRITE_old;
     reg     [  1 : 0 ]              HTRANS_old;
     reg     [ 31 : 0 ]              DATA;
-    reg     [ DQ_BITS - 1 : 0]      DQreg;
+    reg     [ DQ_BITS - 1 : 0    ]  DQreg;
 
     assign  DQ = DQreg;
     
@@ -197,13 +199,13 @@ module ahb_lite_sdram
         //data and addr operations
         case(State)
             S_IDLE              :   if (HSEL) begin 
-                                        HADDR_old <= HADDR; HWRITE_old <= HWRITE; HTRANS_old <= HTRANS;
+                                        SADDR_old <= SADDR; HWRITE_old <= HWRITE; HTRANS_old <= HTRANS;
                                     end
             S_INIT10_NOP        :   if (HSEL) begin 
-                                        HADDR_old <= HADDR; HWRITE_old <= HWRITE; HTRANS_old <= HTRANS;
+                                        SADDR_old <= SADDR; HWRITE_old <= HWRITE; HTRANS_old <= HTRANS;
                                     end
 
-            S_INIT0_nCKE        :   { HADDR_old, HWRITE_old, HTRANS_old } <= { 35 {1'b0}};
+            S_INIT0_nCKE        :   { SADDR_old, HWRITE_old, HTRANS_old } <= { 35 {1'b0}};
 
             S_READ4_RD0         :   DATA [15:0] <= DQ;
             S_READ5_RD1         :   HRDATA <= { DQ, DATA [15:0] };
@@ -213,10 +215,10 @@ module ahb_lite_sdram
 
     end
 
-    // HADDR = { BANKS, ROWS, COLUMNS }
-    wire  [COL_BITS - 1 : 0]  AddrColumn  = HADDR_old [ COL_BITS - 1 : 0 ];
-    wire  [ROW_BITS - 1 : 0]  AddrRow     = HADDR_old [ ROW_BITS + COL_BITS - 1 : COL_BITS ];
-    wire  [BA_BITS  - 1 : 0]  AddrBank    = HADDR_old [ HADDR_BITS - 1 : ROW_BITS + COL_BITS ];
+    // SADDR = { BANKS, ROWS, COLUMNS }
+    wire  [COL_BITS - 1 : 0]  AddrColumn  = SADDR_old [ COL_BITS - 1 : 0 ];
+    wire  [ROW_BITS - 1 : 0]  AddrRow     = SADDR_old [ ROW_BITS + COL_BITS - 1 : COL_BITS ];
+    wire  [BA_BITS  - 1 : 0]  AddrBank    = SADDR_old [ SADDR_BITS - 1 : ROW_BITS + COL_BITS ];
 
     reg    [ 4 : 0 ]    cmd;
     assign  { CKE, CSn, RASn, CASn, WEn } = cmd;
