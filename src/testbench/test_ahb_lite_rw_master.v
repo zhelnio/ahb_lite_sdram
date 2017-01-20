@@ -18,6 +18,7 @@ module test_ahb_lite_rw_master;
     wire  [ DQ_BITS - 1 : 0   ] DQ;
     wire  [ DM_BITS - 1 : 0   ] DQM;
 
+    //AHB-Lite
     reg                         HCLK;    
     reg                         HRESETn;
     wire  [ 31 : 0 ]            HADDR;      //  Address
