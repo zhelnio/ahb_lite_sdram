@@ -1,5 +1,9 @@
-// Testbench for AHB-Lite master emulator
+/* Simple SDRAM controller for MIPSfpga+ system AHB-Lite bus
+ * Copyright(c) 2016 Stanislav Zhelnio
+ * https://github.com/zhelnio/ahb_lite_sdram
+ */
 
+// Testbench for AHB-Lite master emulator
 `timescale 1ns / 1ps
 
 module test_ahb_lite_mem;

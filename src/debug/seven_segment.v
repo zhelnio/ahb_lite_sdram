@@ -1,4 +1,9 @@
+/* Simple SDRAM controller for MIPSfpga+ system AHB-Lite bus
+ * Copyright(c) 2016 Stanislav Zhelnio
+ * https://github.com/zhelnio/ahb_lite_sdram
+ */
 
+ // seven_segment adapter from MIPSfpga+ project
 module seven_segment
 (
     input      [3:0] digit,

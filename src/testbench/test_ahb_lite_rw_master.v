@@ -1,7 +1,9 @@
+/* Simple SDRAM controller for MIPSfpga+ system AHB-Lite bus
+ * Copyright(c) 2016 Stanislav Zhelnio
+ * https://github.com/zhelnio/ahb_lite_sdram
+ */
 
-
-// Testbench for AHB-Lite master emulator
-
+// Testbench for AHB-Lite SDRAM controller HW test
 `timescale 1ns / 1ps
 
 module test_ahb_lite_rw_master;
@@ -72,7 +74,12 @@ module test_ahb_lite_rw_master;
 
     sdr sdram0 (DQ, ADDR, BA, MCLK, CKE, CSn, RASn, CASn, WEn, DQM);
 
-    wire [ 31 : 0 ]              ERRCOUNT;
+    wire [ 31 : 0 ]             ERRCOUNT;
+    wire [  7 : 0 ]             CHKCOUNT;
+    wire                        S_WRITE;
+    wire                        S_CHECK;
+    wire                        S_SUCCESS;
+    wire                        S_FAILED;
 
     ahb_lite_rw_master
     #(
@@ -93,7 +100,13 @@ module test_ahb_lite_rw_master;
         .HREADY     (   HREADY      ),
         .HRESP      (   HRESP       ),
 
-        .ERRCOUNT   (   ERRCOUNT    )
+        .ERRCOUNT   (   ERRCOUNT    ),
+        .CHKCOUNT   (   CHKCOUNT    ),
+        .S_WRITE    (   S_WRITE     ),
+        .S_CHECK    (   S_CHECK     ),
+        .S_SUCCESS  (   S_SUCCESS   ),
+        .S_FAILED   (   S_FAILED    ),
+        .STARTADDR  (   1           )
     );
 
     //main clock
