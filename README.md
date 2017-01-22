@@ -2,7 +2,7 @@
 Simple SDRAM controller for MIPSfpga+ system AHB-Lite bus.
 
 - [x] standalone work in simulator
-- [ ] standalone work on hardware (Terasic board)
+- [x] standalone work on hardware (Terasic board)
 - [ ] work as a part of MIPSfpga+ in simulator
 - [ ] work as a part of MIPSfpga+ on hardware
 - [ ] merging to MIPSfpga+ repository
