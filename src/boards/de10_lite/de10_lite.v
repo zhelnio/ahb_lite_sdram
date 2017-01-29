@@ -132,16 +132,28 @@ module de10_lite(
 	ahb_lite_sdram 
     #(
         //for T=10ns
-        .DELAY_nCKE         (20000),
-        .DELAY_tREF         (6300000),
+        // .DELAY_nCKE         (20000),
+        // .DELAY_tREF         (6300000),
+        // .DELAY_tRP          (0),
+        // .DELAY_tRFC         (4),
+        // .DELAY_tMRD         (0),
+        // .DELAY_tRCD         (0),
+        // .DELAY_tCAS         (0),
+        // .DELAY_afterREAD    (1),
+        // .DELAY_afterWRITE   (3),
+        // .COUNT_initAutoRef  (8)
+
+        //for T=20ns
+        .DELAY_nCKE         (10000),
+        .DELAY_tREF         (3150000),
         .DELAY_tRP          (0),
-        .DELAY_tRFC         (4),
+        .DELAY_tRFC         (2),
         .DELAY_tMRD         (0),
         .DELAY_tRCD         (0),
         .DELAY_tCAS         (0),
-        .DELAY_afterREAD    (1),
-        .DELAY_afterWRITE   (3),
-        .COUNT_initAutoRef  (8)
+        .DELAY_afterREAD    (0),
+        .DELAY_afterWRITE   (2),
+        .COUNT_initAutoRef  (4)
     ) 
     mem
     (
