@@ -14,6 +14,8 @@ module ahb_lite_mem
     input                       HRESETn,
     input       [31:0]          HADDR,
     input       [ 2:0]          HBURST,
+    input                       HMASTLOCK,  // ignored
+    input       [ 3:0]          HPROT,      // ignored
     input                       HSEL,
     input       [ 2:0]          HSIZE,
     input       [ 1:0]          HTRANS,
@@ -21,7 +23,8 @@ module ahb_lite_mem
     input                       HWRITE,
     output  reg [31:0]          HRDATA,
     output                      HREADY,
-    output                      HRESP
+    output                      HRESP,
+    input                       SI_Endian   // ignored
 );
     assign HRESP  = 1'b0;
 
@@ -57,7 +60,8 @@ module ahb_lite_mem
         endcase
     end
 
-    parameter MEM_SIZE = 2 ** ADDR_WIDTH;
+    parameter MEM_SIZE = ( 2 ** ADDR_WIDTH ) / 4;
+
     reg [31:0] ram [ MEM_SIZE - 1 : 0 ];
 
     always @ (posedge HCLK) begin
@@ -74,10 +78,10 @@ module ahb_lite_mem
         end
 
         if(State == S_READ)
-            HRDATA <= ram[HADDR_old];
+            HRDATA <= ram[HADDR_old [ ADDR_WIDTH - 1 + 2 : 2] ];
             
         if(State == S_WRITE)
-            ram[HADDR_old] <= HWDATA;
+            ram[HADDR_old [ ADDR_WIDTH - 1 + 2 : 2] ] <= HWDATA;
     end
 
 endmodule

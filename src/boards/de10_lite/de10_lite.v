@@ -98,6 +98,8 @@ module de10_lite(
 	assign HRESETn = KEY [0];
     assign STARTADDR = { { 20 { 1'b0 }}, SW, 2'b0 };
 
+    assign LEDR[9] = ~DRAM_CKE;
+
 	ahb_lite_rw_master
     #(
         .ADDR_INCREMENT ( 4         ),
