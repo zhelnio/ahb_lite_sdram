@@ -5,6 +5,9 @@
 
 // simply ram with HREADY support
 module ahb_lite_mem
+#(
+    parameter ADDR_WIDTH = 6
+)
 (
     //ABB-Lite side
     input                       HCLK,    
@@ -25,15 +28,17 @@ module ahb_lite_mem
     parameter   S_INIT          = 0,
                 S_IDLE          = 1,
                 S_READ          = 2,
-                S_WRITE         = 3,
-                S_AUTO_REFRESH  = 4;
+                S_WRITE         = 3;
 
-    reg     [4:0]       State, Next;
-    reg     [31:0]      HADDR_old;
-    reg                 HWRITE_old;
+    parameter   HTRANS_IDLE     = 2'b0;
+
+    reg     [  4 : 0 ]      State, Next;
+    reg     [ 31 : 0 ]      HADDR_old;
+    reg                     HWRITE_old;
+    reg     [  1 : 0 ]      HTRANS_old;
 
     assign  HREADY = (State == S_IDLE);
-    wire    NeedAction = (HADDR_old != HADDR || HWRITE_old != HWRITE);
+    wire    NeedAction = HTRANS != HTRANS_IDLE && HSEL;
 
     always @ (posedge HCLK) begin
         if (~HRESETn)
@@ -49,21 +54,23 @@ module ahb_lite_mem
             S_IDLE:         Next = ~NeedAction ? S_IDLE : (HWRITE ? S_WRITE : S_READ);
             S_READ:         Next = S_IDLE;
             S_WRITE:        Next = S_IDLE;
-            S_AUTO_REFRESH: Next = S_IDLE;
         endcase
     end
 
-    reg [31:0] ram [6:0];
+    parameter MEM_SIZE = 2 ** ADDR_WIDTH;
+    reg [31:0] ram [ MEM_SIZE - 1 : 0 ];
 
     always @ (posedge HCLK) begin
         if(State == S_INIT) begin
             HADDR_old   <= 32'b0;
             HWRITE_old  <= 1'b0;
+            HTRANS_old  <= HTRANS_IDLE;
         end
 
         if(State == S_IDLE && HSEL) begin
             HADDR_old   <= HADDR;
             HWRITE_old  <= HWRITE;
+            HTRANS_old  <= HTRANS;
         end
 
         if(State == S_READ)

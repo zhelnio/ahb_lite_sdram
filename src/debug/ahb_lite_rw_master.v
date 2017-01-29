@@ -103,6 +103,7 @@ module ahb_lite_rw_master
                     end
 
                 6:  begin
+                        HADDR_old   <= HADDR;
                         State       <= 7;
                     end
 
