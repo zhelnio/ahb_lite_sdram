@@ -23,7 +23,13 @@ module test_ahb_lite_sdram;
 
     ahb_lite_sdram 
     #(
-        .DELAY_tREF (4000)
+        .DELAY_tREF         ( 4000  ),
+        .DELAY_tRP          ( 1     ),
+        .DELAY_tRFC         ( 7     ),
+        .DELAY_tRCD         ( 1     ),
+        .DELAY_tCAS         ( 1     ),
+        .DELAY_afterREAD    ( 3     ),
+        .DELAY_afterWRITE   ( 5     )
     ) 
     mem
     (

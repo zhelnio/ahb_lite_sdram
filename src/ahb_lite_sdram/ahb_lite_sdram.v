@@ -14,25 +14,26 @@ module ahb_lite_sdram
                 SADDR_BITS          = (ROW_BITS + COL_BITS + BA_BITS),
 
     // delay params depends on Datasheet values, frequency and FSM states count
-    parameter   DELAY_nCKE          = 14000,    /* Init delay before bringing CKE high 
+    // default values are calculated for simulation(!): Micron SDRAM Verilog model with fclk=50 MHz and CAS=2 
+    parameter   DELAY_nCKE          = 20,       /* Init delay before bringing CKE high 
                                                    >= (T * fclk) where T    - CKE LOW init timeout 
                                                                        fclk - clock frequency  */
-                DELAY_tREF          = 8000000,  /* Refresh period 
-                                                   <= ((tREF - tRC) * fclk)                    */
-                DELAY_tRP           = 1,        /* PRECHARGE command period 
-                                                   >= (tRP * fclk - 2)                         */
-                DELAY_tRFC          = 7,        /* AUTO_REFRESH period 
+                DELAY_tREF          = 390,      /* Refresh period 
+                                                   <= ((tREF - tRC) * fclk / RowsInBankCount)  */
+                DELAY_tRP           = 0,        /* PRECHARGE command period 
+                                                   >= (tRP * fclk - 1)                         */
+                DELAY_tRFC          = 2,        /* AUTO_REFRESH period 
                                                    >= (tRFC * fclk - 2)                        */
                 DELAY_tMRD          = 0,        /* LOAD_MODE_REGISTER to ACTIVE or REFRESH command 
                                                    >= (tMRD * fclk - 2)                        */
-                DELAY_tRCD          = 1,        /* ACTIVE-to-READ or WRITE delay 
-                                                   >= (tRCD * fclk - 2)                        */
-                DELAY_tCAS          = 0,        /* CAS delay CAS2=0, CAS3=1 
-                                                   =  (CAS - 2)                                */
-                DELAY_afterREAD     = 3,        /* depends on tRC for READ with auto precharge command 
-                                                   >= ((tRC - tRCD) * fclk - 2 - CAS)          */
-                DELAY_afterWRITE    = 5,        /* depends on tRC for WRITE with auto precharge command 
-                                                   >= ((tRC - tRCD) * fclk - 2)                */
+                DELAY_tRCD          = 0,        /* ACTIVE-to-READ or WRITE delay 
+                                                   >= (tRCD * fclk - 1)                        */
+                DELAY_tCAS          = 0,        /* CAS delay, also depends on clock phase shift 
+                                                   =  (CAS - 1)                                */
+                DELAY_afterREAD     = 0,        /* depends on tRC for READ with auto precharge command 
+                                                   >= ((tRC - tRCD) * fclk - 1 - CAS)          */
+                DELAY_afterWRITE    = 2,        /* depends on tRC for WRITE with auto precharge command 
+                                                   >= ((tRC - tRCD) * fclk - 1)                */
                 COUNT_initAutoRef   = 2         /* count of AUTO_REFRESH during Init operation */
 )
 (
@@ -134,15 +135,14 @@ module ahb_lite_sdram
 
         //State change decision
         case(State)
-            S_IDLE              :   Next = NeedRefresh  ? S_AREF0_AUTOREF : (
-                                           ~NeedAction  ? S_IDLE : (
-                                           HWRITE       ? S_WRITE0_ACT : S_READ0_ACT));
+            S_IDLE              :   Next = NeedAction ? (HWRITE ? S_WRITE0_ACT : S_READ0_ACT) 
+                                                      : (NeedRefresh ? S_AREF0_AUTOREF : S_IDLE);  
 
             S_INIT0_nCKE        :   Next = S_INIT1_nCKE;
             S_INIT1_nCKE        :   Next = BigDelayFinished ? S_INIT2_CKE : S_INIT1_nCKE;
             S_INIT2_CKE         :   Next = S_INIT3_NOP;
             S_INIT3_NOP         :   Next = S_INIT4_PRECHALL;
-            S_INIT4_PRECHALL    :   Next = S_INIT5_NOP;
+            S_INIT4_PRECHALL    :   Next = (DELAY_tRP == 0) ? S_INIT6_PREREF : S_INIT5_NOP;
             S_INIT5_NOP         :   Next = DelayFinished ? S_INIT6_PREREF : S_INIT5_NOP;
             S_INIT6_PREREF      :   Next = S_INIT7_AUTOREF;
             S_INIT7_AUTOREF     :   Next = S_INIT8_NOP;
@@ -153,24 +153,26 @@ module ahb_lite_sdram
                                            ~NeedAction    ? S_IDLE : (
                                            HWRITE         ? S_WRITE0_ACT : S_READ0_ACT));
 
-            S_READ0_ACT         :   Next = S_READ1_NOP;
+            S_READ0_ACT         :   Next = (DELAY_tRCD == 0) ? S_READ2_READ : S_READ1_NOP;
             S_READ1_NOP         :   Next = DelayFinished ? S_READ2_READ : S_READ1_NOP;
-            S_READ2_READ        :   Next = S_READ3_NOP;
+            S_READ2_READ        :   Next = (DELAY_tCAS == 0) ? S_READ4_RD0 : S_READ3_NOP;
             S_READ3_NOP         :   Next = DelayFinished ? S_READ4_RD0 : S_READ3_NOP;
             S_READ4_RD0         :   Next = S_READ5_RD1;
-            S_READ5_RD1         :   Next = S_READ6_NOP;
-            S_READ6_NOP         :   Next = DelayFinished ? S_IDLE : S_READ6_NOP;
+            S_READ5_RD1         :   Next = (DELAY_afterREAD != 0) ? S_READ6_NOP : (
+                                           NeedRefresh  ? S_AREF0_AUTOREF : S_IDLE );
+            S_READ6_NOP         :   Next = ~DelayFinished ? S_READ6_NOP : (
+                                           NeedRefresh  ? S_AREF0_AUTOREF : S_IDLE );
 
-            S_WRITE0_ACT        :   Next = S_WRITE1_NOP;
+            S_WRITE0_ACT        :   Next = (DELAY_tRCD == 0) ? S_WRITE2_WR0 : S_WRITE1_NOP;
             S_WRITE1_NOP        :   Next = DelayFinished ? S_WRITE2_WR0 : S_WRITE1_NOP;
             S_WRITE2_WR0        :   Next = S_WRITE3_WR1;
-            S_WRITE3_WR1        :   Next = S_WRITE4_NOP;
-            S_WRITE4_NOP        :   Next = DelayFinished ? S_IDLE : S_WRITE4_NOP;
+            S_WRITE3_WR1        :   Next = (DELAY_afterWRITE != 0) ? S_WRITE4_NOP : (
+                                            NeedRefresh  ? S_AREF0_AUTOREF : S_IDLE );
+            S_WRITE4_NOP        :   Next = ~DelayFinished ? S_WRITE4_NOP : (
+                                           NeedRefresh  ? S_AREF0_AUTOREF : S_IDLE );
 
             S_AREF0_AUTOREF     :   Next = S_AREF1_NOP;
-            S_AREF1_NOP         :   Next = ~DelayFinished ? S_AREF1_NOP : (
-                                           ~NeedAction    ? S_IDLE : (
-                                           HWRITE         ? S_WRITE0_ACT : S_READ0_ACT));
+            S_AREF1_NOP         :   Next = ~DelayFinished ? S_AREF1_NOP : S_IDLE;
         endcase
     end
 
@@ -178,15 +180,15 @@ module ahb_lite_sdram
         
         //short delay and count operations
         case(State)
-            S_INIT4_PRECHALL    :   delay_n <= DELAY_tRP;
+            S_INIT4_PRECHALL    :   delay_n <= DELAY_tRP        - 1;
             S_INIT6_PREREF      :   repeat_cnt <= COUNT_initAutoRef;
             S_INIT7_AUTOREF     :   begin delay_n <= DELAY_tRFC; repeat_cnt <= repeat_cnt - 1; end
             S_INIT9_LMR         :   delay_n <= DELAY_tMRD; 
-            S_READ0_ACT         :   delay_n <= DELAY_tRCD;
-            S_READ2_READ        :   delay_n <= DELAY_tCAS;
-            S_READ5_RD1         :   delay_n <= DELAY_afterREAD;
-            S_WRITE0_ACT        :   delay_n <= DELAY_tRCD;
-            S_WRITE3_WR1        :   delay_n <= DELAY_afterWRITE;
+            S_READ0_ACT         :   delay_n <= DELAY_tRCD       - 1;
+            S_READ2_READ        :   delay_n <= DELAY_tCAS       - 1;
+            S_READ5_RD1         :   delay_n <= DELAY_afterREAD  - 1;
+            S_WRITE0_ACT        :   delay_n <= DELAY_tRCD       - 1;
+            S_WRITE3_WR1        :   delay_n <= DELAY_afterWRITE - 1;
             S_AREF0_AUTOREF     :   delay_n <= DELAY_tRFC;
             default             :   if (|delay_n) delay_n <= delay_n - 1;
         endcase
@@ -215,7 +217,6 @@ module ahb_lite_sdram
             S_WRITE0_ACT        :   DATA <= HWDATA;
             default             :   ;
         endcase
-
     end
 
     // SADDR = { BANKS, ROWS, COLUMNS }
@@ -235,7 +236,13 @@ module ahb_lite_sdram
                 CMD_READ            = 5'b10101,
                 CMD_WRITE           = 5'b10100;
 
-    parameter   SDRAM_MODE          = 13'b0000000100001; // CAS=2, BL=2, Seq
+    parameter   SDRAM_CAS           = 3'b010;            // CAS=2
+    parameter   SDRAM_BURST_TYPE    = 1'b0;              // Sequential
+    parameter   SDRAM_BURST_LEN     = 3'b001;            // BL=2
+
+    parameter   SDRAM_MODE_A        = { { ADDR_BITS - 7 { 1'b0 } }, SDRAM_CAS, SDRAM_BURST_TYPE, SDRAM_BURST_LEN };
+    parameter   SDRAM_MODE_B        = { BA_BITS {1'b0} };
+
     parameter   SDRAM_ALL_BANKS     = (1 << 10);         // A[10]=1
     parameter   SDRAM_AUTOPRCH_FLAG = (1 << 10);         // A[10]=1
 
@@ -249,7 +256,7 @@ module ahb_lite_sdram
             S_INIT1_nCKE        :   cmd = CMD_NOP_NCKE;
             S_INIT4_PRECHALL    :   begin cmd = CMD_PRECHARGEALL;   ADDR = SDRAM_ALL_BANKS; end
             S_INIT7_AUTOREF     :   cmd = CMD_AUTOREFRESH;
-            S_INIT9_LMR         :   begin cmd = CMD_LOADMODEREG;    ADDR = SDRAM_MODE; end
+            S_INIT9_LMR         :   begin cmd = CMD_LOADMODEREG;    ADDR = SDRAM_MODE_A; BA = SDRAM_MODE_B; end
 
             S_READ0_ACT         :   begin cmd = CMD_ACTIVE;         ADDR = AddrRow;     BA = AddrBank; end
             S_READ2_READ        :   begin cmd = CMD_READ;           ADDR = AddrColumn | SDRAM_AUTOPRCH_FLAG;  BA = AddrBank; end
@@ -266,6 +273,5 @@ module ahb_lite_sdram
             S_WRITE3_WR1        :   DQreg = DATA [ 31:16 ];
         endcase
     end
-
 
 endmodule

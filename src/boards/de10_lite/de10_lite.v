@@ -93,7 +93,9 @@ module de10_lite(
 //  Structural coding
 //=======================================================
 
-    pll pll(MAX10_CLK1_50, DRAM_CLK, HCLK);
+    wire clk200;
+
+    pll pll(MAX10_CLK1_50, DRAM_CLK, HCLK, clk200);
 
 	assign HRESETn = KEY [0];
     assign STARTADDR = { { 20 { 1'b0 }}, SW, 2'b0 };
@@ -103,9 +105,9 @@ module de10_lite(
 	ahb_lite_rw_master
     #(
         .ADDR_INCREMENT ( 4         ),
-        .DELAY_BITS     ( 21        ),
+        .DELAY_BITS     ( 26        ),
         .INCREMENT_CNT  ( 16000     ),
-        .READ_ITER_CNT  ( 8'hff     )
+        .READ_ITER_CNT  ( 8000000   )
     )
     master 
     (
