@@ -128,23 +128,24 @@
 /* 015 */     // delay params depends on Datasheet values, frequency and FSM states count
 /* 016 */     // default values are calculated for simulation(!): Micron SDRAM Verilog model with fclk=50 MHz and CAS=2 
 /* 017 */     parameter   DELAY_nCKE          = 20,       /* Init delay before bringing CKE high 
-/* 018 */                                                    >= (T * fclk) where T    - CKE LOW init timeout 
-/* 019 */                                                                        fclk - clock frequency  */
+                                                             >= (T * fclk) where T    - CKE LOW init timeout 
+                                                                                 fclk - clock frequency  */
 /* 020 */                 DELAY_tREF          = 390,      /* Refresh period 
-/* 021 */                                                    <= ((tREF - tRC) * fclk / RowsInBankCount)  */
+                                                             <= ((tREF - tRC) * fclk / RowsInBankCount)  */
 /* 022 */                 DELAY_tRP           = 0,        /* PRECHARGE command period 
-/* 023 */                                                    >= (tRP * fclk - 1)                         */
+                                                             >= (tRP * fclk - 1)                         */
 /* 024 */                 DELAY_tRFC          = 2,        /* AUTO_REFRESH period 
-/* 025 */                                                    >= (tRFC * fclk - 2)                        */
+                                                             >= (tRFC * fclk - 2)                        */
 /* 026 */                 DELAY_tMRD          = 0,        /* LOAD_MODE_REGISTER to ACTIVE or REFRESH command 
-/* 027 */                                                    >= (tMRD * fclk - 2)                        */
+                                                             >= (tMRD * fclk - 2)                        */
 /* 028 */                 DELAY_tRCD          = 0,        /* ACTIVE-to-READ or WRITE delay 
-/* 029 */                                                    >= (tRCD * fclk - 1)                        */
+                                                             >= (tRCD * fclk - 1)                        */
 /* 030 */                 DELAY_tCAS          = 0,        /* CAS delay, also depends on clock phase shift 
-/* 031 */                                                    =  (CAS - 1)                                */
+                                                             =  (CAS - 1)                                */
 /* 032 */                 DELAY_afterREAD     = 0,        /* depends on tRC for READ with auto precharge command 
-/* 033 */                                                    >= ((tRC - tRCD) * fclk - 1 - CAS)          */
+                                                            >= ((tRC - tRCD) * fclk - 1 - CAS)          */
 /* 034 */                 DELAY_afterWRITE    = 2,        /* depends on tRC for WRITE with auto precharge command 
-/* 035 */                                                    >= ((tRC - tRCD) * fclk - 1)                */
+                                                             >= ((tRC - tRCD) * fclk - 1)                */
 /* 036 */                 COUNT_initAutoRef   = 2         /* count of AUTO_REFRESH during Init operation */
 /* 037 */ )
+         
