@@ -23,6 +23,13 @@ wire            HRESP;      //  0 is OKAY, 1 is ERROR
 parameter       hi_z = {32{1'bz}};  // Hi-Z
 parameter       St_x = {32{1'bx}};  // X-State
 
+parameter       HSIZE_X8    = 3'b000,
+                HSIZE_X16   = 3'b001,
+                HSIZE_X32   = 3'b010;
+
+parameter       READ  = 0,
+                WRITE = 1;
+
 initial begin
     HCLK        = 1'b0;
     HRESETn     = 1'b1;
@@ -38,6 +45,7 @@ end
 task ahbPhase;
     input [31:0]    iNextHADDR;
     input           iNextHWRITE;
+    input [ 2:0]    iNextHSIZE;
     input [31:0]    iHWDATA;
 
     reg         HWRITE_old;
@@ -50,6 +58,7 @@ task ahbPhase;
         HSEL    = 1'b1;
         HADDR   = iNextHADDR;
         HWRITE  = iNextHWRITE;
+        HSIZE   = iNextHSIZE;
         HWDATA  = HWRITE_old ? iHWDATA : St_x;
 
         @(posedge HCLK);
@@ -71,21 +80,23 @@ endtask
 task ahbPhaseFst;
     input [31:0]    iNextHADDR;
     input           iNextHWRITE;
+    input [ 2:0]    iNextHSIZE;
     input [31:0]    iHWDATA;
     begin
         HTRANS  = 2'b10; 
-        ahbPhase (iNextHADDR, iNextHWRITE, iHWDATA);
+        ahbPhase (iNextHADDR, iNextHWRITE, iNextHSIZE, iHWDATA);
     end
 endtask
 
 task ahbPhaseLst;
     input [31:0]    iNextHADDR;
     input           iNextHWRITE;
+    input [ 2:0]    iNextHSIZE;
     input [31:0]    iHWDATA;
 
     begin
         HTRANS  = 2'b00; 
-        ahbPhase (iNextHADDR, iNextHWRITE, iHWDATA);
+        ahbPhase (iNextHADDR, iNextHWRITE, iNextHSIZE, iHWDATA);
     end
 endtask
 

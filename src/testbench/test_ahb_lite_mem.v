@@ -38,12 +38,12 @@ module test_ahb_lite_mem;
             HRESETn = 1;
 
             @(posedge HCLK);
-            ahbPhaseFst(0, 0, St_x);
-            ahbPhase   (4, 1, St_x);
-            ahbPhase   (8, 1, 4);
-            ahbPhase   (4, 0, 8);
-            ahbPhase   (8, 0, St_x);
-            ahbPhaseLst(8, 0, St_x);
+            ahbPhaseFst(0, READ,  HSIZE_X32, St_x);
+            ahbPhase   (4, WRITE, HSIZE_X32, St_x);
+            ahbPhase   (8, WRITE, HSIZE_X32, 32'h76543210);
+            ahbPhase   (4, READ,  HSIZE_X32, 32'hFEDCAB98);
+            ahbPhase   (8, READ,  HSIZE_X32, St_x);
+            ahbPhaseLst(8, READ,  HSIZE_X32, St_x);
 
             @(posedge HCLK);
             @(posedge HCLK);

@@ -26,7 +26,7 @@ module test_ahb_lite_sdram;
         .DELAY_tREF         ( 4000  ),
         .DELAY_tRP          ( 1     ),
         .DELAY_tRFC         ( 7     ),
-        .DELAY_tRCD         ( 1     ),
+        .DELAY_tRCD         ( 2     ),
         .DELAY_tCAS         ( 1     ),
         .DELAY_afterREAD    ( 3     ),
         .DELAY_afterWRITE   ( 5     )
@@ -78,12 +78,24 @@ module test_ahb_lite_sdram;
             HRESETn = 1;
 
             @(posedge HCLK);
-            ahbPhaseFst(0, 0, St_x);
-            ahbPhase   (4, 1, St_x);
-            ahbPhase   (8, 1, 4);
-            ahbPhase   (4, 0, 8);
-            ahbPhase   (8, 0, St_x);
-            ahbPhaseLst(8, 0, St_x);
+            ahbPhaseFst(0,  READ,  HSIZE_X32, St_x);
+            ahbPhase   (4,  WRITE, HSIZE_X32, St_x);
+            ahbPhase   (8,  WRITE, HSIZE_X32, 32'h76543210);
+            ahbPhase   (4,  READ,  HSIZE_X32, 32'hFEDCAB98);
+            ahbPhase   (8,  READ,  HSIZE_X32, St_x);
+
+            ahbPhase   (4,  WRITE, HSIZE_X16, St_x);
+            ahbPhase   (6,  WRITE, HSIZE_X16, 32'h7654AAAA);
+            ahbPhase   (4,  READ,  HSIZE_X32, 32'hBBBB3210);
+            
+            ahbPhase   (4,  WRITE, HSIZE_X8,  St_x);
+            ahbPhase   (6,  WRITE, HSIZE_X8,  32'h111111CC);
+            ahbPhase   (9,  WRITE, HSIZE_X8,  32'h22DD2222);
+            ahbPhase   (11, WRITE, HSIZE_X8,  32'h3333EE33);
+            ahbPhase   (4,  READ,  HSIZE_X32, 32'hFF444444);
+            
+            ahbPhase   (8,  READ,  HSIZE_X32, St_x);
+            ahbPhaseLst(8,  READ,  HSIZE_X32, St_x);
 
             @(posedge HCLK);
             @(posedge HCLK);
