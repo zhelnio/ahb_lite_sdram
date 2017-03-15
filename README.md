@@ -21,5 +21,3 @@ Main features:
 - Micron Technology, Inc. ("MTI") SDRAM Verilog model (v2.3) was used for simulation
 
 [MIPSfpga+ / mipsfpga-plus / MFP] (https://github.com/MIPSfpga/mipsfpga-plus) is a cleaned-up and improved variant of MIPSfpga-based system.
-
-![Alt text](/readme/simulation_log.png?raw=true "log")
