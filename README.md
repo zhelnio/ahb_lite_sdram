@@ -17,9 +17,7 @@ Main features:
 - only init, read, write and auto-refresh operations;
 - page burst access is not supported;
 - clock suspend mode is not supported;
-- only HSIZE4 (x32) AHB-Lite data transfer operations supported
+- all HSIZE (x32, x16, x8) AHB-Lite data transfer operations supported
 - Micron Technology, Inc. ("MTI") SDRAM Verilog model (v2.3) was used for simulation
 
 [MIPSfpga+ / mipsfpga-plus / MFP] (https://github.com/MIPSfpga/mipsfpga-plus) is a cleaned-up and improved variant of MIPSfpga-based system.
-
-![Alt text](/readme/simulation_log.png?raw=true "log")
