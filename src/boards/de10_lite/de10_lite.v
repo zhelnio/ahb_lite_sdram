@@ -159,7 +159,8 @@ module de10_lite(
         .HWDATA     (   HWDATA      ),
         .HWRITE     (   HWRITE      ),
         .HRDATA     (   HRDATA      ),
-        .HREADY     (   HREADY      ),
+        .HREADY     (   1'b1        ),
+        .HREADYOUT  (   HREADY      ),
         .HRESP      (   HRESP       ),
 
         .CKE        (   DRAM_CKE                ),
