@@ -68,36 +68,36 @@ module ahb_lite_sdram
 );
 
     //FSM states
-    parameter   S_IDLE              = 0,    /* Inited and waitong for AHB-Lite request */
+    localparam  S_IDLE              = 6'd0,    /* Inited and waitong for AHB-Lite request */
 
-                S_INIT0_nCKE        = 1,    /* First step after HW reset */
-                S_INIT1_nCKE        = 2,    /* Holding CKE LOW for DELAY_nCKE before init steps */
-                S_INIT2_CKE         = 3,    /* Bringing CKE HIGH */
-                S_INIT3_NOP         = 4,    /* NOP after CKE is HIGH */
-                S_INIT4_PRECHALL    = 5,    /* Doing PRECHARGE */
-                S_INIT5_NOP         = 6,    /* Waiting for DELAY_tRP after PRECHARGE */
-                S_INIT6_PREREF      = 7,    /* Setting AUTO_REFRESH count*/
-                S_INIT7_AUTOREF     = 8,    /* Doing AUTO_REFRESH */
-                S_INIT8_NOP         = 9,    /* Waiting for DELAY_tRFC after AUTO_REFRESH */
-                S_INIT9_LMR         = 10,   /* Doing LOAD_MODE_REGISTER with CAS=2, BL=2, Seq  */
-                S_INIT10_NOP        = 11,   /* Waiting for DELAY_tMRD after LOAD_MODE_REGISTER */
+                S_INIT0_nCKE        = 6'd1,    /* First step after HW reset */
+                S_INIT1_nCKE        = 6'd2,    /* Holding CKE LOW for DELAY_nCKE before init steps */
+                S_INIT2_CKE         = 6'd3,    /* Bringing CKE HIGH */
+                S_INIT3_NOP         = 6'd4,    /* NOP after CKE is HIGH */
+                S_INIT4_PRECHALL    = 6'd5,    /* Doing PRECHARGE */
+                S_INIT5_NOP         = 6'd6,    /* Waiting for DELAY_tRP after PRECHARGE */
+                S_INIT6_PREREF      = 6'd7,    /* Setting AUTO_REFRESH count*/
+                S_INIT7_AUTOREF     = 6'd8,    /* Doing AUTO_REFRESH */
+                S_INIT8_NOP         = 6'd9,    /* Waiting for DELAY_tRFC after AUTO_REFRESH */
+                S_INIT9_LMR         = 6'd10,   /* Doing LOAD_MODE_REGISTER with CAS=2, BL=2, Seq  */
+                S_INIT10_NOP        = 6'd11,   /* Waiting for DELAY_tMRD after LOAD_MODE_REGISTER */
 
-                S_READ0_ACT         = 20,   /* Doing ACTIVE */
-                S_READ1_NOP         = 21,   /* Waiting for DELAY_tRCD after ACTIVE */
-                S_READ2_READ        = 22,   /* Doing READ with Auto precharge */
-                S_READ3_NOP         = 23,   /* Waiting for DELAY_tCAS after READ */
-                S_READ4_RD0         = 24,   /* Reading 1st word */
-                S_READ5_RD1         = 25,   /* Reading 2nd word */
-                S_READ6_NOP         = 26,   /* Waiting for DELAY_afterREAD - it depends on tRC */
+                S_READ0_ACT         = 6'd20,   /* Doing ACTIVE */
+                S_READ1_NOP         = 6'd21,   /* Waiting for DELAY_tRCD after ACTIVE */
+                S_READ2_READ        = 6'd22,   /* Doing READ with Auto precharge */
+                S_READ3_NOP         = 6'd23,   /* Waiting for DELAY_tCAS after READ */
+                S_READ4_RD0         = 6'd24,   /* Reading 1st word */
+                S_READ5_RD1         = 6'd25,   /* Reading 2nd word */
+                S_READ6_NOP         = 6'd26,   /* Waiting for DELAY_afterREAD - it depends on tRC */
 
-                S_WRITE0_ACT        = 30,   /* Doing ACTIVE */
-                S_WRITE1_NOP        = 31,   /* Waiting for DELAY_tRCD after ACTIVE */
-                S_WRITE2_WR0        = 32,   /* Doing Write with Auto precharge, writing 1st word */
-                S_WRITE3_WR1        = 33,   /* Writing 2nd word */
-                S_WRITE4_NOP        = 34,   /* Waiting for DELAY_afterWRITE - it depends on tRC */
+                S_WRITE0_ACT        = 6'd30,   /* Doing ACTIVE */
+                S_WRITE1_NOP        = 6'd31,   /* Waiting for DELAY_tRCD after ACTIVE */
+                S_WRITE2_WR0        = 6'd32,   /* Doing Write with Auto precharge, writing 1st word */
+                S_WRITE3_WR1        = 6'd33,   /* Writing 2nd word */
+                S_WRITE4_NOP        = 6'd34,   /* Waiting for DELAY_afterWRITE - it depends on tRC */
 
-                S_AREF0_AUTOREF     = 40,   /* Doing AUTO_REFRESH */
-                S_AREF1_NOP         = 41;   /* Waiting for DELAY_tRFC after AUTO_REFRESH */
+                S_AREF0_AUTOREF     = 6'd40,   /* Doing AUTO_REFRESH */
+                S_AREF1_NOP         = 6'd41;   /* Waiting for DELAY_tRFC after AUTO_REFRESH */
 
     reg     [  5 : 0 ]              State, Next;
     reg     [ 24 : 0 ]              delay_u;
@@ -114,8 +114,8 @@ module ahb_lite_sdram
 
     assign  DQ = DQreg;
     
-    parameter   HTRANS_IDLE = 2'b0;
-    parameter   HSIZE_X8    = 3'b000,
+    localparam  HTRANS_IDLE = 2'b0;
+    localparam  HSIZE_X8    = 3'b000,
                 HSIZE_X16   = 3'b001,
                 HSIZE_X32   = 3'b010;
 
@@ -241,7 +241,7 @@ module ahb_lite_sdram
     reg     [ 4 : 0 ]    cmd;
     assign  { CKE, CSn, RASn, CASn, WEn } = cmd;
 
-    parameter   CMD_NOP_NCKE        = 5'b00111,
+    localparam  CMD_NOP_NCKE        = 5'b00111,
                 CMD_NOP             = 5'b10111,
                 CMD_PRECHARGEALL    = 5'b10010,
                 CMD_AUTOREFRESH     = 5'b10001,
@@ -250,15 +250,15 @@ module ahb_lite_sdram
                 CMD_READ            = 5'b10101,
                 CMD_WRITE           = 5'b10100;
 
-    parameter   SDRAM_CAS           = 3'b010;            // CAS=2
-    parameter   SDRAM_BURST_TYPE    = 1'b0;              // Sequential
-    parameter   SDRAM_BURST_LEN     = 3'b001;            // BL=2
+    localparam  SDRAM_CAS           = 3'b010;            // CAS=2
+    localparam  SDRAM_BURST_TYPE    = 1'b0;              // Sequential
+    localparam  SDRAM_BURST_LEN     = 3'b001;            // BL=2
 
-    parameter   SDRAM_MODE_A        = { { ADDR_BITS - 7 { 1'b0 } }, SDRAM_CAS, SDRAM_BURST_TYPE, SDRAM_BURST_LEN };
-    parameter   SDRAM_MODE_B        = { BA_BITS {1'b0} };
+    localparam  SDRAM_MODE_A        = { { ADDR_BITS - 7 { 1'b0 } }, SDRAM_CAS, SDRAM_BURST_TYPE, SDRAM_BURST_LEN };
+    localparam  SDRAM_MODE_B        = { BA_BITS {1'b0} };
 
-    parameter   SDRAM_ALL_BANKS     = (1 << 10);         // A[10]=1
-    parameter   SDRAM_AUTOPRCH_FLAG = (1 << 10);         // A[10]=1
+    localparam  SDRAM_ALL_BANKS     = (1 << 10);         // A[10]=1
+    localparam  SDRAM_AUTOPRCH_FLAG = (1 << 10);         // A[10]=1
 
     // set SDRAM i/o
     always @ (*) begin
