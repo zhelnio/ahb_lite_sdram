@@ -142,7 +142,7 @@ module de10_lite(
         .DELAY_tRFC         (2),
         .DELAY_tMRD         (0),
         .DELAY_tRCD         (0),
-        .DELAY_tCAS         (0),
+        .DELAY_tCAS         (1),
         .DELAY_afterREAD    (0),
         .DELAY_afterWRITE   (2),
         .COUNT_initAutoRef  (8)
