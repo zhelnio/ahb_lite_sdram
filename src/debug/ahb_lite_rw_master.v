@@ -44,6 +44,9 @@ module ahb_lite_rw_master
     reg     [ DELAY_BITS - 1 : 0 ]  delay_u;
     wire    BigDelayFinished    = ~|delay_u;
 
+    reg     [ 31 : 0 ]              curErrors;
+    wire    [ 31 : 0 ]              sumErrors = ERRCOUNT + curErrors;
+
     wire    [ 31 : 0 ]  debugValue = HADDR_old;
 
     assign HWDATA = debugValue;
@@ -66,6 +69,7 @@ module ahb_lite_rw_master
                         HWRITE      <= 1'b1;
                         State       <= 1;
                         ERRCOUNT    <= 0;
+                        curErrors   <= 0;
                         status      <= 4'b1000;
                         CHKCOUNT    <= 0;
                     end
@@ -104,33 +108,37 @@ module ahb_lite_rw_master
 
                 6:  begin
                         HADDR_old   <= HADDR;
+                        HADDR       <= HADDR + ADDR_INCREMENT;
                         State       <= 7;
                     end
 
                 7:  if(HREADY) begin
                         if(HRDATA != debugValue)
-                            ERRCOUNT <= ERRCOUNT + 1; 
+                            curErrors   <= curErrors + 1;
                         
                         if(HADDR == MAX_HADDR + STARTADDR) begin
-
-                            if ( CHKCOUNT == READ_ITER_CNT ) begin
-                                HTRANS      <= 2'b00;
-                                State       <= ( |ERRCOUNT ) ? 8 : 9;
-                                end
-                            else begin
-                                State       <= 3;
-                                CHKCOUNT    <= CHKCOUNT + 1;
+                            HTRANS      <= 2'b00;
+                            State       <= 8;
                             end
-                        end
-                        
                         else begin
                             HADDR_old   <= HADDR;
                             HADDR       <= HADDR + ADDR_INCREMENT;
                         end
                     end
 
-                8:  status      <= 4'b0001; //FAILED
-                9:  status      <= 4'b0010; //SUCCESS
+                8:  if ( CHKCOUNT == READ_ITER_CNT ) begin
+                        ERRCOUNT    <= sumErrors; 
+                        State       <= ( |sumErrors ) ? 9 : 10;
+                        end
+                    else begin
+                        State       <= 3;
+                        CHKCOUNT    <= CHKCOUNT + 1;
+                        ERRCOUNT    <= sumErrors; 
+                        curErrors   <= 0;
+                    end
+
+                9:  status      <= 4'b0001; //FAILED
+                10: status      <= 4'b0010; //SUCCESS
 
             endcase
     end
