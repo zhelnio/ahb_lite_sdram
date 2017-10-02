@@ -99,7 +99,8 @@ module ahb_lite_sdram
                 S_AREF0_AUTOREF     = 6'd40,   /* Doing AUTO_REFRESH */
                 S_AREF1_NOP         = 6'd41;   /* Waiting for DELAY_tRFC after AUTO_REFRESH */
 
-    reg     [  5 : 0 ]              State, Next;
+    wire    [  5 : 0 ]              State;
+    reg     [  5 : 0 ]              Next;
     reg     [ 24 : 0 ]              delay_u;
     reg     [  4 : 0 ]              delay_n;
     reg     [  3 : 0 ]              repeat_cnt;
@@ -109,7 +110,6 @@ module ahb_lite_sdram
     reg                             HWRITE_old;
     reg     [  1 : 0 ]              HTRANS_old;
 
-    reg     [ 31 : 0 ]              DATA;
     reg     [ DQ_BITS - 1 : 0    ]  DQreg;
 
     assign  DQ = DQreg;
@@ -128,17 +128,13 @@ module ahb_lite_sdram
     wire    BigDelayFinished    = ~|delay_u;
     wire    RepeatsFinished     = ~|repeat_cnt;
 
-    always @ (posedge HCLK) begin
-        if (~HRESETn)
-            State <= S_INIT0_nCKE;
-        else
-            State <= Next;
-    end
+    mfp_register_r #(.WIDTH(6), .RESET(S_INIT0_nCKE)) State_r(HCLK, HRESETn, Next, 1'b1, State);
 
     always @ (*) begin
-
         //State change decision
+        Next = State;
         case(State)
+            default             :   ;
             S_IDLE              :   Next = NeedAction ? (HWRITE ? S_WRITE0_ACT : S_READ0_ACT) 
                                                       : (NeedRefresh ? S_AREF0_AUTOREF : S_IDLE);  
 
@@ -180,6 +176,8 @@ module ahb_lite_sdram
         endcase
     end
 
+    reg [15:0] DATA;
+
     always @ (posedge HCLK) begin
         
         //short delay and count operations
@@ -215,9 +213,8 @@ module ahb_lite_sdram
 
             S_INIT0_nCKE        :   { HADDR_old, HWRITE_old, HSIZE_old, HTRANS_old } <= { 38 {1'b0}};
 
-            S_READ4_RD0         :   DATA [15:0] <= DQ;
-            S_READ5_RD1         :   HRDATA <= { DQ, DATA [15:0] };
-            S_WRITE0_ACT        :   DATA <= HWDATA;
+            S_READ4_RD0         :   HRDATA [ 15:0  ] <= DQ;
+            S_READ5_RD1         :   HRDATA [ 31:16 ] <= DQ;
             default             :   ;
         endcase
     end
@@ -234,8 +231,8 @@ module ahb_lite_sdram
 
     wire    [              1 : 0 ]  ByteNum     =   HADDR_old [ 1 : 0 ];
     wire    [  COL_BITS  - 1 : 0 ]  AddrColumn  = { HADDR_old [ COL_BITS : 2 ] , 1'b0 };
-    wire    [  ROW_BITS  - 1 : 0 ]  AddrRow     =   HADDR_old [ ROW_BITS + COL_BITS : COL_BITS + 1 ];
-    wire    [  BA_BITS   - 1 : 0 ]  AddrBank    =   HADDR_old [ SADDR_BITS : ROW_BITS + COL_BITS + 1 ];
+    wire    [  ROW_BITS  - 1 : 0 ]  AddrRow     =   HADDR [ ROW_BITS + COL_BITS : COL_BITS + 1 ];
+    wire    [  BA_BITS   - 1 : 0 ]  AddrBank    =   HADDR [ SADDR_BITS : ROW_BITS + COL_BITS + 1 ];
 
     // SDRAM command data
     reg     [ 4 : 0 ]    cmd;
@@ -261,46 +258,46 @@ module ahb_lite_sdram
     localparam  SDRAM_AUTOPRCH_FLAG = (1 << 10);         // A[10]=1
 
     // set SDRAM i/o
-    always @ (*) begin
+    always @ (posedge HCLK) begin
         // command and addr
-        case(State)
-            default             :   cmd = CMD_NOP;
-            S_INIT0_nCKE        :   cmd = CMD_NOP_NCKE;
-            S_INIT1_nCKE        :   cmd = CMD_NOP_NCKE;
-            S_INIT4_PRECHALL    :   begin cmd = CMD_PRECHARGEALL;   ADDR = SDRAM_ALL_BANKS; end
-            S_INIT7_AUTOREF     :   cmd = CMD_AUTOREFRESH;
-            S_INIT9_LMR         :   begin cmd = CMD_LOADMODEREG;    ADDR = SDRAM_MODE_A; BA = SDRAM_MODE_B; end
+        case(Next)
+            default             :   cmd <= CMD_NOP;
+            S_INIT0_nCKE        :   cmd <= CMD_NOP_NCKE;
+            S_INIT1_nCKE        :   cmd <= CMD_NOP_NCKE;
+            S_INIT4_PRECHALL    :   begin cmd <= CMD_PRECHARGEALL;   ADDR <= SDRAM_ALL_BANKS; end
+            S_INIT7_AUTOREF     :   cmd <= CMD_AUTOREFRESH;
+            S_INIT9_LMR         :   begin cmd <= CMD_LOADMODEREG;    ADDR <= SDRAM_MODE_A; BA <= SDRAM_MODE_B; end
 
-            S_READ0_ACT         :   begin cmd = CMD_ACTIVE;         ADDR = AddrRow;     BA = AddrBank; end
-            S_READ2_READ        :   begin cmd = CMD_READ;           ADDR = AddrColumn | SDRAM_AUTOPRCH_FLAG;  BA = AddrBank; end
+            S_READ0_ACT         :   begin cmd <= CMD_ACTIVE;         ADDR <= AddrRow;     BA <= AddrBank; end
+            S_READ2_READ        :   begin cmd <= CMD_READ;           ADDR <= AddrColumn | SDRAM_AUTOPRCH_FLAG; end
 
-            S_WRITE0_ACT        :   begin cmd = CMD_ACTIVE;         ADDR = AddrRow;     BA = AddrBank; end
-            S_WRITE2_WR0        :   begin cmd = CMD_WRITE;          ADDR = AddrColumn | SDRAM_AUTOPRCH_FLAG;  BA = AddrBank; end
+            S_WRITE0_ACT        :   begin cmd <= CMD_ACTIVE;         ADDR <= AddrRow;     BA <= AddrBank; end
+            S_WRITE2_WR0        :   begin cmd <= CMD_WRITE;          ADDR <= AddrColumn | SDRAM_AUTOPRCH_FLAG; end
 
-            S_AREF0_AUTOREF     :   cmd = CMD_AUTOREFRESH;
+            S_AREF0_AUTOREF     :   cmd <= CMD_AUTOREFRESH;
         endcase
 
         //data
-        case(State)
-            default             :   DQreg = { DQ_BITS { 1'bz }};
-            S_WRITE2_WR0        :   DQreg = DATA [ 15:0  ];
-            S_WRITE3_WR1        :   DQreg = DATA [ 31:16 ];
+        case(Next)
+            default             :   DQreg <= { DQ_BITS { 1'bz }};
+            S_WRITE2_WR0        :   DQreg <= HWDATA [ 15:0  ];
+            S_WRITE3_WR1        :   DQreg <= HWDATA [ 31:16 ];
         endcase
 
         //data mask
-        casez( { State, HSIZE_old, ByteNum } )
-            default:                                DQM = 2'b00;
-            { S_WRITE2_WR0, HSIZE_X8,   2'b00 } :   DQM = 2'b10;
-            { S_WRITE2_WR0, HSIZE_X8,   2'b01 } :   DQM = 2'b01;
-            { S_WRITE2_WR0, HSIZE_X8,   2'b1? } :   DQM = 2'b11;
-            { S_WRITE3_WR1, HSIZE_X8,   2'b0? } :   DQM = 2'b11;
-            { S_WRITE3_WR1, HSIZE_X8,   2'b10 } :   DQM = 2'b10;
-            { S_WRITE3_WR1, HSIZE_X8,   2'b11 } :   DQM = 2'b01;
+        casez( { Next, HSIZE_old, ByteNum } )
+            default:                                DQM <= 2'b00;
+            { S_WRITE2_WR0, HSIZE_X8,   2'b00 } :   DQM <= 2'b10;
+            { S_WRITE2_WR0, HSIZE_X8,   2'b01 } :   DQM <= 2'b01;
+            { S_WRITE2_WR0, HSIZE_X8,   2'b1? } :   DQM <= 2'b11;
+            { S_WRITE3_WR1, HSIZE_X8,   2'b0? } :   DQM <= 2'b11;
+            { S_WRITE3_WR1, HSIZE_X8,   2'b10 } :   DQM <= 2'b10;
+            { S_WRITE3_WR1, HSIZE_X8,   2'b11 } :   DQM <= 2'b01;
 
-            { S_WRITE2_WR0, HSIZE_X16,  2'b0? } :   DQM = 2'b00;
-            { S_WRITE2_WR0, HSIZE_X16,  2'b1? } :   DQM = 2'b11;
-            { S_WRITE3_WR1, HSIZE_X16,  2'b0? } :   DQM = 2'b11;
-            { S_WRITE3_WR1, HSIZE_X16,  2'b1? } :   DQM = 2'b00;
+            { S_WRITE2_WR0, HSIZE_X16,  2'b0? } :   DQM <= 2'b00;
+            { S_WRITE2_WR0, HSIZE_X16,  2'b1? } :   DQM <= 2'b11;
+            { S_WRITE3_WR1, HSIZE_X16,  2'b0? } :   DQM <= 2'b11;
+            { S_WRITE3_WR1, HSIZE_X16,  2'b1? } :   DQM <= 2'b00;
         endcase
     end
 
