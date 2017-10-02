@@ -106,7 +106,7 @@ module de10_lite(
     #(
         .ADDR_INCREMENT ( 4         ),
         .DELAY_BITS     ( 26        ),
-        .INCREMENT_CNT  ( 16000     ),
+        .INCREMENT_CNT  ( 15000000  ),
         .READ_ITER_CNT  ( 8000000   )
     )
     master 
