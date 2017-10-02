@@ -43,7 +43,8 @@ module test_ahb_lite_sdram;
         .HWDATA     (   HWDATA      ),
         .HWRITE     (   HWRITE      ),
         .HRDATA     (   HRDATA      ),
-        .HREADY     (   HREADY      ),
+        .HREADYOUT  (   HREADY      ),
+        .HREADY     (   1'b1        ),
         .HRESP      (   HRESP       ),
 
         .CKE        (   CKE         ),

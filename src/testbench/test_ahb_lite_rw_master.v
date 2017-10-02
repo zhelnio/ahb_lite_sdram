@@ -34,7 +34,7 @@ module test_ahb_lite_rw_master;
     wire                        HREADY;     //  Indicate the previous transfer is complete
     wire                        HRESP;      //  0 is OKAY, 1 is ERROR
 
-    `define CLOCK_50_MHZ 1
+    //`define CLOCK_50_MHZ 1
 
     ahb_lite_sdram 
     #(
@@ -63,7 +63,8 @@ module test_ahb_lite_rw_master;
         .HWDATA     (   HWDATA      ),
         .HWRITE     (   HWRITE      ),
         .HRDATA     (   HRDATA      ),
-        .HREADY     (   HREADY      ),
+        .HREADYOUT  (   HREADY      ),
+        .HREADY     (   1'b1        ),
         .HRESP      (   HRESP       ),
 
         .CKE        (   CKE         ),
