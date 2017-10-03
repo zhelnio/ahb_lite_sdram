@@ -34,7 +34,7 @@ module test_ahb_lite_rw_master;
     wire                        HREADY;     //  Indicate the previous transfer is complete
     wire                        HRESP;      //  0 is OKAY, 1 is ERROR
 
-    //`define CLOCK_50_MHZ 1
+    `define CLOCK_50_MHZ 1
 
     ahb_lite_sdram 
     #(
