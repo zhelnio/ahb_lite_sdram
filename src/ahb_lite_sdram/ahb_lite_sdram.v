@@ -99,16 +99,20 @@ module ahb_lite_sdram
                 S_AREF0_AUTOREF     = 6'd40,   /* Doing AUTO_REFRESH */
                 S_AREF1_NOP         = 6'd41;   /* Waiting for DELAY_tRFC after AUTO_REFRESH */
 
+    localparam  LD_SIZE = 25,       //long delay counter size
+                SD_SIZE = 5,        //short delay counter size
+                RP_SIZE = 4;        //operation repeat counter
+
     wire    [  5 : 0 ]              State;
     reg     [  5 : 0 ]              Next;
-    reg     [ 24 : 0 ]              delay_u;
-    reg     [  4 : 0 ]              delay_n;
-    reg     [  3 : 0 ]              repeat_cnt;
+    wire    [ LD_SIZE - 1 : 0 ]     longDelay;
+    reg     [ LD_SIZE - 1 : 0 ]     longDelayNext;
+    wire    [ SD_SIZE - 1 : 0 ]     shortDelay;
+    reg     [ SD_SIZE - 1 : 0 ]     shortDelayNext;
+    wire    [ RP_SIZE - 1 : 0 ]     repeatCnt;
+    reg     [ RP_SIZE - 1 : 0 ]     repeatCntNext;
 
-    reg     [  2 : 0 ]              HSIZE_old;
-    reg     [ 31 : 0 ]              HADDR_old;
-    reg                             HWRITE_old;
-    reg     [  1 : 0 ]              HTRANS_old;
+
 
     reg     [ DQ_BITS - 1 : 0    ]  DQreg;
 
@@ -123,12 +127,21 @@ module ahb_lite_sdram
     assign  HREADYOUT = (State == S_IDLE);
 
     wire    NeedAction = HTRANS != HTRANS_IDLE && HSEL && HREADY;
-    wire    NeedRefresh         = ~|delay_u;
-    wire    DelayFinished       = ~|delay_n;
-    wire    BigDelayFinished    = ~|delay_u;
-    wire    RepeatsFinished     = ~|repeat_cnt;
+    wire    NeedRefresh         = (longDelay  == 25'b0);
+    wire    DelayFinished       = (shortDelay ==  5'b0);
+    wire    BigDelayFinished    = (longDelay  == 25'b0);
+    wire    RepeatsFinished     = (repeatCnt  ==  4'b0);
 
     mfp_register_r #(.WIDTH(6), .RESET(S_INIT0_nCKE)) State_r(HCLK, HRESETn, Next, 1'b1, State);
+    mfp_register_r #(.WIDTH(25)) longDelay_r(HCLK, HRESETn, longDelayNext, 1'b1, longDelay);
+    mfp_register_r #(.WIDTH(5)) shortDelay_r(HCLK, HRESETn, shortDelayNext, 1'b1, shortDelay);
+    mfp_register_r #(.WIDTH(4)) repeatCnt_r(HCLK, HRESETn, repeatCntNext, 1'b1, repeatCnt);
+
+    wire    [  2 : 0 ]              HSIZE_old;
+    wire    [ 31 : 0 ]              HADDR_old;
+    reg                             saveAddrPhase;
+    mfp_register_r #(.WIDTH(3))  HSIZE_r(HCLK, HRESETn, HSIZE, saveAddrPhase, HSIZE_old);
+    mfp_register_r #(.WIDTH(32)) HADDR_r(HCLK, HRESETn, HADDR, saveAddrPhase, HADDR_old);
 
     always @ (*) begin
         //State change decision
@@ -174,52 +187,43 @@ module ahb_lite_sdram
             S_AREF0_AUTOREF     :   Next = S_AREF1_NOP;
             S_AREF1_NOP         :   Next = ~DelayFinished ? S_AREF1_NOP : S_IDLE;
         endcase
-    end
 
-    reg [15:0] DATA;
-
-    always @ (posedge HCLK) begin
-        
-        //short delay and count operations
+        //short delay counter
         case(State)
-            S_INIT4_PRECHALL    :   delay_n <= DELAY_tRP        - 1;
-            S_INIT6_PREREF      :   repeat_cnt <= COUNT_initAutoRef;
-            S_INIT7_AUTOREF     :   begin delay_n <= DELAY_tRFC; repeat_cnt <= repeat_cnt - 1; end
-            S_INIT9_LMR         :   delay_n <= DELAY_tMRD; 
-            S_READ0_ACT         :   delay_n <= DELAY_tRCD       - 1;
-            S_READ2_READ        :   delay_n <= DELAY_tCAS       - 1;
-            S_READ5_RD1         :   delay_n <= DELAY_afterREAD  - 1;
-            S_WRITE0_ACT        :   delay_n <= DELAY_tRCD       - 1;
-            S_WRITE3_WR1        :   delay_n <= DELAY_afterWRITE - 1;
-            S_AREF0_AUTOREF     :   delay_n <= DELAY_tRFC;
-            default             :   if (|delay_n) delay_n <= delay_n - 1;
+            S_INIT4_PRECHALL    :   shortDelayNext = DELAY_tRP - 1;
+            S_INIT7_AUTOREF     :   shortDelayNext = DELAY_tRFC;
+            S_INIT9_LMR         :   shortDelayNext = DELAY_tMRD;
+            S_READ0_ACT         :   shortDelayNext = DELAY_tRCD - 1;
+            S_READ2_READ        :   shortDelayNext = DELAY_tCAS - 1;
+            S_READ5_RD1         :   shortDelayNext = DELAY_afterREAD - 1;
+            S_WRITE0_ACT        :   shortDelayNext = DELAY_tRCD - 1;
+            S_WRITE3_WR1        :   shortDelayNext = DELAY_afterWRITE - 1;
+            S_AREF0_AUTOREF     :   shortDelayNext = DELAY_tRFC;
+            default             :   shortDelayNext = DelayFinished ? 0 : shortDelay - 1;
         endcase
 
-        //long delay operations
+        //repeat operations counter
         case(State)
-            S_INIT0_nCKE        :   delay_u <= DELAY_nCKE;
-            S_INIT7_AUTOREF     :   delay_u <= DELAY_tREF;
-            S_AREF0_AUTOREF     :   delay_u <= DELAY_tREF;
-            default             :   if (|delay_u) delay_u <= delay_u - 1;
+            S_INIT6_PREREF      :   repeatCntNext = COUNT_initAutoRef;
+            S_INIT7_AUTOREF     :   repeatCntNext = RepeatsFinished ? 0 : repeatCnt - 1;
+            default             :   repeatCntNext = repeatCnt;
         endcase
 
-        //data and addr operations
+        //long delay counter
+        case(State)
+            S_INIT0_nCKE        :   longDelayNext = DELAY_nCKE;
+            S_INIT7_AUTOREF     :   longDelayNext = DELAY_tREF;
+            S_AREF0_AUTOREF     :   longDelayNext = DELAY_tREF;
+            default             :   longDelayNext = BigDelayFinished ? 0 : longDelay - 1;
+        endcase
+
+        //addr phase save
         case(State)
             S_INIT10_NOP,
-            S_IDLE              :   if (HSEL) begin 
-                                        HADDR_old   <= HADDR;   HWRITE_old  <= HWRITE; 
-                                        HSIZE_old   <= HSIZE;   HTRANS_old  <= HTRANS;  
-                                    end
-
-            S_INIT0_nCKE        :   { HADDR_old, HWRITE_old, HSIZE_old, HTRANS_old } <= { 38 {1'b0}};
-
-            S_READ4_RD0         :   HRDATA [ 15:0  ] <= DQ;
-            S_READ5_RD1         :   HRDATA [ 31:16 ] <= DQ;
-            default             :   ;
+            S_IDLE              :   saveAddrPhase = HSEL;
+            default             :   saveAddrPhase = 0;
         endcase
     end
-
-
 
     // address structure (example):
     // HADDR_old    (x32)   bbbb bbbb bbbb bbbb  bbbb bbbb bbbb bbbb
@@ -277,11 +281,18 @@ module ahb_lite_sdram
             S_AREF0_AUTOREF     :   cmd <= CMD_AUTOREFRESH;
         endcase
 
-        //data
+        //write data
         case(Next)
             default             :   DQreg <= { DQ_BITS { 1'bz }};
             S_WRITE2_WR0        :   DQreg <= HWDATA [ 15:0  ];
             S_WRITE3_WR1        :   DQreg <= HWDATA [ 31:16 ];
+        endcase
+
+        //read data
+        case(State)
+            default             :   ;
+            S_READ4_RD0         :   HRDATA [ 15:0  ] <= DQ;
+            S_READ5_RD1         :   HRDATA [ 31:16 ] <= DQ;
         endcase
 
         //data mask
