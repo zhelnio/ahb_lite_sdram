@@ -31,3 +31,11 @@
 `define SDRAM_DELAY_afterWRITE    2         /* depends on tRC for WRITE with auto precharge command 
                                             >= ((tRC - tRCD) * fclk - 1)                */
 `define SDRAM_COUNT_initAutoRef   2         /* count of AUTO_REFRESH during Init operation */
+
+
+
+`define SDRAM_CMD_FIFO_DATA_WIDTH   36
+`define SDRAM_CMD_FIFO_USED_SIZE    2
+`define SDRAM_CMD_FIFO_ADDR_WIDTH   2
+`define SDRAM_DATA_FIFO_USED_SIZE   2
+`define SDRAM_DATA_FIFO_ADDR_WIDTH  2

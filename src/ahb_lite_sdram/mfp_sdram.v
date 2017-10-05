@@ -12,18 +12,18 @@ module mfp_sdram
     input                                   SDRAM_RSTn,
 
     //cmd & addr FIFO reader side
-    output                                  CFIFO_REN,
-    input      [                   35 : 0 ] CFIFO_RDATA,
+    output reg                              CFIFO_REN,
+    input      [ `SDRAM_CMD_FIFO_DATA_WIDTH - 1 : 0 ] CFIFO_RDATA,
     input                                   CFIFO_REMPTY,
 
     //write data to memory FIFO reader side
-    output                                  WFIFO_REN,
-    input      [                   32 : 0 ] WFIFO_RDATA,
+    output reg                              WFIFO_REN,
+    input      [                   31 : 0 ] WFIFO_RDATA,
     input                                   WFIFO_REMPTY,
 
     //read data from memory FIFO writer side
     output reg                              RFIFO_WEN,
-    output reg [                   32 : 0 ] RFIFO_WDATA,
+    output reg [                   31 : 0 ] RFIFO_WDATA,
     input                                   RFIFO_WFULL,
 
     //SDRAM side
@@ -32,8 +32,8 @@ module mfp_sdram
     output                                  SDRAM_RASn,
     output                                  SDRAM_CASn,
     output                                  SDRAM_WEn,
-    output reg [ `SDRAM_ADDR_BITS - 1 : 0 ] SDRAM_ADDR,
-    output reg [ `SDRAM_BA_BITS   - 1 : 0 ] SDRAM_BA,
+    output     [ `SDRAM_ADDR_BITS - 1 : 0 ] SDRAM_ADDR,
+    output     [ `SDRAM_BA_BITS   - 1 : 0 ] SDRAM_BA,
     inout      [ `SDRAM_DQ_BITS   - 1 : 0 ] SDRAM_DQ,
     output reg [ `SDRAM_DM_BITS   - 1 : 0 ] SDRAM_DQM
 );
@@ -185,7 +185,7 @@ module mfp_sdram
             S_IDLE              :   CFIFO_REN  = NeedAction;
             S_WRITE0_ACT        :   WFIFO_REN = 1'b1;
             S_READ5_RD1         :   RFIFO_WEN = 1'b1;
-            default             :   { saveCmdInfo, RFIFO_WEN } = 2'b0;
+            default             :   { CFIFO_REN, WFIFO_REN, RFIFO_WEN } = 3'b0;
         endcase
     end
 
@@ -202,9 +202,9 @@ module mfp_sdram
 
     wire    [ 4 : 0 ]   sdramCmd;
     reg     [ 4 : 0 ]   sdramCmdNext;
-    assign  { SDRAM_CKE, SDRAM_CSn, SDRAM_RASn, SDRAM_CASn, SDRAM_WEn } = cmd;
+    assign  { SDRAM_CKE, SDRAM_CSn, SDRAM_RASn, SDRAM_CASn, SDRAM_WEn } = sdramCmd;
 
-    mfp_register_r #(.WIDTH(4)) cmd_r(SDRAM_CLK, SDRAM_RSTn, sdramCmdNext, 1'b1, sdramCmd);
+    mfp_register_r #(.WIDTH(5)) cmd_r(SDRAM_CLK, SDRAM_RSTn, sdramCmdNext, 1'b1, sdramCmd);
 
     // set SDRAM command output
     always @ (*) begin
@@ -247,8 +247,8 @@ module mfp_sdram
     localparam  SDRAM_ALL_BANKS     = (1 << 10);         // A[10]=1
     localparam  SDRAM_AUTOPRCH_FLAG = (1 << 10);         // A[10]=1
 
-    wire [ `SDRAM_ADDR_BITS - 1 : 0 ]   sdramAddrNext;
-    wire [   `SDRAM_BA_BITS - 1 : 0 ]   sdramBaNext;
+    reg  [ `SDRAM_ADDR_BITS - 1 : 0 ]   sdramAddrNext;
+    reg  [   `SDRAM_BA_BITS - 1 : 0 ]   sdramBaNext;
 
     mfp_register_r #(.WIDTH(`SDRAM_ADDR_BITS)) ADDR_r(SDRAM_CLK, SDRAM_RSTn, sdramAddrNext, 1'b1, SDRAM_ADDR);
     mfp_register_r #(.WIDTH(`SDRAM_BA_BITS))   BA_r(SDRAM_CLK, SDRAM_RSTn, sdramBaNext, 1'b1, SDRAM_BA);

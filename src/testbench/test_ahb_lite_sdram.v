@@ -21,7 +21,7 @@ module test_ahb_lite_sdram;
     wire  [DQ_BITS - 1 : 0]   DQ;
     wire  [DM_BITS - 1 : 0]   DQM;
 
-    ahb_lite_sdram 
+    ahb_lite_sdram /*
     #(
         .DELAY_tREF         ( 4000  ),
         .DELAY_tRP          ( 1     ),
@@ -30,7 +30,7 @@ module test_ahb_lite_sdram;
         .DELAY_tCAS         ( 1     ),
         .DELAY_afterREAD    ( 3     ),
         .DELAY_afterWRITE   ( 5     )
-    ) 
+    ) */
     mem
     (
         .HCLK       (   HCLK        ),
@@ -47,15 +47,18 @@ module test_ahb_lite_sdram;
         .HREADY     (   1'b1        ),
         .HRESP      (   HRESP       ),
 
-        .CKE        (   CKE         ),
-        .CSn        (   CSn         ),
-        .RASn       (   RASn        ),
-        .CASn       (   CASn        ),
-        .WEn        (   WEn         ),
-        .ADDR       (   ADDR        ),
-        .BA         (   BA          ),
-        .DQ         (   DQ          ),
-        .DQM        (   DQM         )
+        .SDRAM_CLK  (   HCLK        ),
+        .SDRAM_RSTn (   HRESETn     ),
+
+        .SDRAM_CKE  (   CKE         ),
+        .SDRAM_CSn  (   CSn         ),
+        .SDRAM_RASn (   RASn        ),
+        .SDRAM_CASn (   CASn        ),
+        .SDRAM_WEn  (   WEn         ),
+        .SDRAM_ADDR (   ADDR        ),
+        .SDRAM_BA   (   BA          ),
+        .SDRAM_DQ   (   DQ          ),
+        .SDRAM_DQM  (   DQM         )
     );
 
     //memory clock
