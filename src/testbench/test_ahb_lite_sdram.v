@@ -4,7 +4,7 @@
  */
 
 // Testbench for AHB-Lite master sdram controller
-`timescale 1ns / 1ps
+`timescale 1ns / 100ps
 
 module test_ahb_lite_sdram;
 
@@ -20,6 +20,9 @@ module test_ahb_lite_sdram;
     wire  [BA_BITS - 1 : 0]   BA;
     wire  [DQ_BITS - 1 : 0]   DQ;
     wire  [DM_BITS - 1 : 0]   DQM;
+
+    reg                       SDRAM_CLK_OUT;
+    reg                       SDRAM_CLK;
 
     ahb_lite_sdram
     mem
@@ -38,7 +41,7 @@ module test_ahb_lite_sdram;
         .HREADY     (   1'b1        ),
         .HRESP      (   HRESP       ),
 
-        .SDRAM_CLK  (   HCLK        ),
+        .SDRAM_CLK  (   SDRAM_CLK   ),
         .SDRAM_RSTn (   HRESETn     ),
 
         .SDRAM_CKE  (   CKE         ),
@@ -53,16 +56,19 @@ module test_ahb_lite_sdram;
     );
 
     //memory clock
-    reg             MCLK;
+    initial SDRAM_CLK = 0;
+    always #(tCK/2) SDRAM_CLK = ~SDRAM_CLK;
+
     initial begin
-        MCLK = 1; #2 //phase shift from main clock
-        forever MCLK = #(tCK/2) ~MCLK;
+        SDRAM_CLK_OUT = 1; #2 //phase shift from main clock 
+        forever SDRAM_CLK_OUT = #(tCK/2) ~SDRAM_CLK_OUT;
     end
 
-    sdr sdram0 (DQ, ADDR, BA, MCLK, CKE, CSn, RASn, CASn, WEn, DQM);
+    sdr sdram0 (DQ, ADDR, BA, SDRAM_CLK_OUT, CKE, CSn, RASn, CASn, WEn, DQM);
 
     //main clock
-    always #(tCK/2) HCLK = ~HCLK;
+    localparam tHCLK = 20;
+    always #(tHCLK/2) HCLK = ~HCLK;
 
     initial begin
         begin
