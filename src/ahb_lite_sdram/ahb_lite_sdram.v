@@ -149,7 +149,7 @@ module ahb_lite_sdram
         .SDRAM_DQM    ( SDRAM_DQM    )
     );
 
-    ahb_lite_mem_fifo mem_fifo
+    ahb_lite_sdram_fifo sdram_fifo
     (
         .HCLK         ( HCLK         ),
         .HRESETn      ( HRESETn      ),
@@ -178,7 +178,7 @@ module ahb_lite_sdram
 endmodule
 
 
-module ahb_lite_mem_fifo
+module ahb_lite_sdram_fifo
 (
     //ABB-Lite side
     input                 HCLK,
