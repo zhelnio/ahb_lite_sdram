@@ -58,21 +58,21 @@ module ahb_lite_rw_master
 
     always @(posedge HCLK) begin
         if(!HRESETn)
-            State <= 0;
+            begin
+                HADDR_old   <= STARTADDR;
+                HADDR       <= STARTADDR;
+                HTRANS      <= 2'b10;   //NONSEQ
+                HWRITE      <= 1'b1;
+                State       <= 1;
+                ERRCOUNT    <= 0;
+                curErrors   <= 0;
+                status      <= 4'b1000;
+                CHKCOUNT    <= 0;
+            end
         else 
             case(State)
                 //init
-                0:  begin
-                        HADDR_old   <= STARTADDR;
-                        HADDR       <= STARTADDR;
-                        HTRANS      <= 2'b10;   //NONSEQ
-                        HWRITE      <= 1'b1;
-                        State       <= 1;
-                        ERRCOUNT    <= 0;
-                        curErrors   <= 0;
-                        status      <= 4'b1000;
-                        CHKCOUNT    <= 0;
-                    end
+                // 0:
                 
                 //write
                 1:  if(HREADY) begin
