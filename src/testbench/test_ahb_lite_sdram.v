@@ -21,16 +21,7 @@ module test_ahb_lite_sdram;
     wire  [DQ_BITS - 1 : 0]   DQ;
     wire  [DM_BITS - 1 : 0]   DQM;
 
-    ahb_lite_sdram /*
-    #(
-        .DELAY_tREF         ( 4000  ),
-        .DELAY_tRP          ( 1     ),
-        .DELAY_tRFC         ( 7     ),
-        .DELAY_tRCD         ( 2     ),
-        .DELAY_tCAS         ( 1     ),
-        .DELAY_afterREAD    ( 3     ),
-        .DELAY_afterWRITE   ( 5     )
-    ) */
+    ahb_lite_sdram
     mem
     (
         .HCLK       (   HCLK        ),

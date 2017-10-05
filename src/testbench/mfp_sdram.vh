@@ -25,7 +25,7 @@
 `define SDRAM_DELAY_tRCD          2         /* ACTIVE-to-READ or WRITE delay 
                                             >= (tRCD * fclk - 1)                        */
 `define SDRAM_DELAY_tCAS          2         /* CAS delay, also depends on clock phase shift 
-                                            =  (CAS - 1)                                */
+                                            =  (CAS)                                */
 `define SDRAM_DELAY_afterREAD     3         /* depends on tRC for READ with auto precharge command 
                                             >= ((tRC - tRCD) * fclk - 1 - CAS)          */
 `define SDRAM_DELAY_afterWRITE    4         /* depends on tRC for WRITE with auto precharge command 
