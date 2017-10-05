@@ -34,24 +34,10 @@ module test_ahb_lite_rw_master;
     wire                        HREADY;     //  Indicate the previous transfer is complete
     wire                        HRESP;      //  0 is OKAY, 1 is ERROR
 
-    `define CLOCK_50_MHZ 1
+    reg                         SDRAM_CLK_OUT;
+    reg                         SDRAM_CLK;
 
-    ahb_lite_sdram 
-    #(
-        .DELAY_nCKE (1000),
-        .DELAY_tREF (4000)
-
-        `ifndef CLOCK_50_MHZ
-        ,
-        .DELAY_tRP          ( 1     ),
-        .DELAY_tRFC         ( 7     ),
-        .DELAY_tRCD         ( 2     ),
-        .DELAY_tCAS         ( 1     ),
-        .DELAY_afterREAD    ( 3     ),
-        .DELAY_afterWRITE   ( 5     )
-        `endif
-    ) 
-    mem
+    ahb_lite_sdram mem
     (
         .HCLK       (   HCLK        ),
         .HRESETn    (   HRESETn     ),
@@ -67,39 +53,40 @@ module test_ahb_lite_rw_master;
         .HREADY     (   1'b1        ),
         .HRESP      (   HRESP       ),
 
-        .CKE        (   CKE         ),
-        .CSn        (   CSn         ),
-        .RASn       (   RASn        ),
-        .CASn       (   CASn        ),
-        .WEn        (   WEn         ),
-        .ADDR       (   ADDR        ),
-        .BA         (   BA          ),
-        .DQ         (   DQ          ),
-        .DQM        (   DQM         )
+        .SDRAM_CLK  (   SDRAM_CLK   ),
+        .SDRAM_RSTn (   HRESETn     ),
+
+        .SDRAM_CKE  (   CKE         ),
+        .SDRAM_CSn  (   CSn         ),
+        .SDRAM_RASn (   RASn        ),
+        .SDRAM_CASn (   CASn        ),
+        .SDRAM_WEn  (   WEn         ),
+        .SDRAM_ADDR (   ADDR        ),
+        .SDRAM_BA   (   BA          ),
+        .SDRAM_DQ   (   DQ          ),
+        .SDRAM_DQM  (   DQM         )
     );
 
     //----------------------------------------------------------------------
-    reg     MCLK;   //memory clock
 
-    `ifdef CLOCK_50_MHZ
-        parameter tT = 20;
-        parameter phaseShift = 12;
-    `else
-        parameter tT = tCK;
-        parameter phaseShift = 2;
-    `endif
+    parameter tT = 20;
+    parameter phaseShift = 2;
+
+    initial SDRAM_CLK_OUT = 1; 
+    initial SDRAM_CLK = 0;
+    initial HCLK = 0;
+
+    always #(tCK/2) SDRAM_CLK = ~SDRAM_CLK;
+    always #(tT/2)  HCLK = ~HCLK; //main clock
 
     initial begin
-        MCLK = 1; 
         #(phaseShift) 
-        forever MCLK = #(tT/2) ~MCLK;
+        forever SDRAM_CLK_OUT = #(tCK/2) ~SDRAM_CLK_OUT;
     end
-
-    always #(tT/2) HCLK = ~HCLK; //main clock
 
     //----------------------------------------------------------------------
 
-    sdr sdram0 (DQ, ADDR, BA, MCLK, CKE, CSn, RASn, CASn, WEn, DQM);
+    sdr sdram0 (DQ, ADDR, BA, SDRAM_CLK_OUT, CKE, CSn, RASn, CASn, WEn, DQM);
 
     wire [ 31 : 0 ]             ERRCOUNT;
     wire [  7 : 0 ]             CHKCOUNT;
@@ -140,8 +127,8 @@ module test_ahb_lite_rw_master;
 
     initial begin
         begin
-            HCLK    = 0;
-            HRESETn = 0;        
+            HRESETn = 0;
+            @(posedge HCLK);
             @(posedge HCLK);
             @(posedge HCLK);
             HRESETn = 1;

@@ -21,7 +21,5 @@ vlog $p0 $p1 $p2 $p3 $p4  $i0 $i1 $i2 $i3  $s0 $s1 $s2 $s3
 
 vsim work.test_ahb_lite_rw_master
 add wave -radix hex sim:/test_ahb_lite_rw_master/*
-add wave -radix unsigned sim:/test_ahb_lite_rw_master/mem/State
-add wave -radix unsigned sim:/test_ahb_lite_rw_master/master/State
 run -all
 wave zoom full

@@ -24,8 +24,7 @@ module test_ahb_lite_sdram;
     reg                       SDRAM_CLK_OUT;
     reg                       SDRAM_CLK;
 
-    ahb_lite_sdram
-    mem
+    ahb_lite_sdram mem
     (
         .HCLK       (   HCLK        ),
         .HRESETn    (   HRESETn     ),
