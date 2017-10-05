@@ -152,3 +152,44 @@ module ahb_lite_sdram
     );
 
 endmodule
+
+
+module ahb_lite_mem_fifo
+(
+    //ABB-Lite side
+    input                                    HCLK,
+    input                                    HRESETn,
+    input       [ 31 : 0 ]                   HADDR,
+    input       [  2 : 0 ]                   HBURST,
+    input                                    HMASTLOCK,  // ignored
+    input       [ 3:0]                       HPROT,      // ignored
+    input                                    HSEL,
+    input       [  2 : 0 ]                   HSIZE,
+    input       [  1 : 0 ]                   HTRANS,
+    input       [ 31 : 0 ]                   HWDATA,
+    input                                    HWRITE,
+    input                                    HREADY,
+    output  reg [ 31 : 0 ]                   HRDATA,
+    output                                   HREADYOUT,
+    output                                   HRESP,
+    input                                    SI_Endian,  // ignored
+
+    //cmd & addr FIFO writer side
+    output                                  CFIFO_WEN,
+    output     [                   35 : 0 ] CFIFO_WDATA,
+    input                                   CFIFO_WFULL,
+
+    //write data to memory FIFO writer side
+    output                                  WFIFO_WEN,
+    output     [                   32 : 0 ] WFIFO_WDATA,
+    input                                   WFIFO_WFULL,
+
+    //read data from memory FIFO reader side
+    output                                  RFIFO_REN,
+    input      [                   32 : 0 ] RFIFO_RDATA,
+    input                                   RFIFO_REMPTY,
+);
+
+    //TODO
+
+endmodule
