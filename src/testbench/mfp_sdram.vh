@@ -14,24 +14,23 @@
 `define SDRAM_DELAY_nCKE          20        /* Init delay before bringing CKE high 
                                             >= (T * fclk) where T    - CKE LOW init timeout 
                                                             fclk - clock frequency  */
-`define SDRAM_DELAY_tREF          390       /* Refresh period 
+`define SDRAM_DELAY_tREF          4000      /* Refresh period 
                                             <= ((tREF - tRC) * fclk / RowsInBankCount)  */
-`define SDRAM_DELAY_tRP           0         /* PRECHARGE command period 
+`define SDRAM_DELAY_tRP           1         /* PRECHARGE command period 
                                             >= (tRP * fclk - 1)                         */
-`define SDRAM_DELAY_tRFC          2         /* AUTO_REFRESH period 
+`define SDRAM_DELAY_tRFC          7         /* AUTO_REFRESH period 
                                             >= (tRFC * fclk - 2)                        */
-`define SDRAM_DELAY_tMRD          0         /* LOAD_MODE_REGISTER to ACTIVE or REFRESH command 
+`define SDRAM_DELAY_tMRD          2         /* LOAD_MODE_REGISTER to ACTIVE or REFRESH command 
                                             >= (tMRD * fclk - 2)                        */
-`define SDRAM_DELAY_tRCD          0         /* ACTIVE-to-READ or WRITE delay 
+`define SDRAM_DELAY_tRCD          2         /* ACTIVE-to-READ or WRITE delay 
                                             >= (tRCD * fclk - 1)                        */
-`define SDRAM_DELAY_tCAS          0         /* CAS delay, also depends on clock phase shift 
+`define SDRAM_DELAY_tCAS          2         /* CAS delay, also depends on clock phase shift 
                                             =  (CAS - 1)                                */
-`define SDRAM_DELAY_afterREAD     0         /* depends on tRC for READ with auto precharge command 
+`define SDRAM_DELAY_afterREAD     3         /* depends on tRC for READ with auto precharge command 
                                             >= ((tRC - tRCD) * fclk - 1 - CAS)          */
-`define SDRAM_DELAY_afterWRITE    2         /* depends on tRC for WRITE with auto precharge command 
+`define SDRAM_DELAY_afterWRITE    4         /* depends on tRC for WRITE with auto precharge command 
                                             >= ((tRC - tRCD) * fclk - 1)                */
 `define SDRAM_COUNT_initAutoRef   2         /* count of AUTO_REFRESH during Init operation */
-
 
 
 `define SDRAM_CMD_FIFO_DATA_WIDTH   36

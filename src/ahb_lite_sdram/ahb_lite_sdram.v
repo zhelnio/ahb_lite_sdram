@@ -18,7 +18,7 @@ module ahb_lite_sdram
     input       [ 31 : 0 ]                   HWDATA,
     input                                    HWRITE,
     input                                    HREADY,
-    output  reg [ 31 : 0 ]                   HRDATA,
+    output      [ 31 : 0 ]                   HRDATA,
     output                                   HREADYOUT,
     output                                   HRESP,
 
@@ -125,7 +125,7 @@ module ahb_lite_sdram
         .REMPTY  ( RFIFO_REMPTY )
     );
 
-    mfp_sdram mem
+    mfp_sdram sdram
     (
         .SDRAM_CLK    ( SDRAM_CLK    ),
         .SDRAM_RSTn   ( SDRAM_RSTn   ),
@@ -149,6 +149,32 @@ module ahb_lite_sdram
         .SDRAM_DQM    ( SDRAM_DQM    )
     );
 
+    ahb_lite_mem_fifo mem_fifo
+    (
+        .HCLK         ( HCLK         ),
+        .HRESETn      ( HRESETn      ),
+        .HADDR        ( HADDR        ),
+        .HBURST       ( HBURST       ),
+        .HSEL         ( HSEL         ),
+        .HSIZE        ( HSIZE        ),
+        .HTRANS       ( HTRANS       ),
+        .HWDATA       ( HWDATA       ),
+        .HWRITE       ( HWRITE       ),
+        .HREADY       ( HREADY       ),
+        .HRDATA       ( HRDATA       ),
+        .HREADYOUT    ( HREADYOUT    ),
+        .HRESP        ( HRESP        ),
+        .CFIFO_WEN    ( CFIFO_WEN    ),
+        .CFIFO_WDATA  ( CFIFO_WDATA  ),
+        .CFIFO_WFULL  ( CFIFO_WFULL  ),
+        .WFIFO_WEN    ( WFIFO_WEN    ),
+        .WFIFO_WDATA  ( WFIFO_WDATA  ),
+        .WFIFO_WFULL  ( WFIFO_WFULL  ),
+        .RFIFO_REN    ( RFIFO_REN    ),
+        .RFIFO_RDATA  ( RFIFO_RDATA  ),
+        .RFIFO_REMPTY ( RFIFO_REMPTY )
+    );
+
 endmodule
 
 
@@ -159,8 +185,6 @@ module ahb_lite_mem_fifo
     input                 HRESETn,
     input      [ 31 : 0 ] HADDR,
     input      [  2 : 0 ] HBURST,
-    input                 HMASTLOCK,  // ignored
-    input      [  3 : 0 ] HPROT,      // ignored
     input                 HSEL,
     input      [  2 : 0 ] HSIZE,
     input      [  1 : 0 ] HTRANS,

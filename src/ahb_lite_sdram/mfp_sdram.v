@@ -122,13 +122,12 @@ module mfp_sdram
             S_INIT8_NOP         :   Next = ~DelayFinished  ? S_INIT8_NOP : (
                                            RepeatsFinished ? S_INIT9_LMR : S_INIT7_AUTOREF );
             S_INIT9_LMR         :   Next = S_INIT10_NOP;
-            S_INIT10_NOP        :   Next = ~DelayFinished ? S_INIT10_NOP : (
-                                           ~NeedAction    ? S_IDLE : S_CMD0_GET );
+            S_INIT10_NOP        :   Next = ~DelayFinished ? S_INIT10_NOP : S_IDLE;
 
             S_CMD0_GET          :   Next = ~CWRITE ? S_READ0_ACT : (
                                             WFIFO_REMPTY ? S_WRITE0_WAIT : S_WRITE0_ACT);
 
-            S_READ0_ACT         :   Next = (`SDRAM_DELAY_tRCD == 0) ? S_READ2_READ : S_READ1_NOP;
+            S_READ0_ACT         :   Next = S_READ1_NOP;
             S_READ1_NOP         :   Next = DelayFinished ? S_READ2_READ : S_READ1_NOP;
             S_READ2_READ        :   Next = (`SDRAM_DELAY_tCAS == 0) ? S_READ4_RD0 : S_READ3_NOP;
             S_READ3_NOP         :   Next = DelayFinished ? S_READ4_RD0 : S_READ3_NOP;
@@ -139,7 +138,7 @@ module mfp_sdram
                                            NeedRefresh  ? S_AREF0_AUTOREF : S_IDLE );
 
             S_WRITE0_WAIT       :   Next = WFIFO_REMPTY ? S_WRITE0_WAIT : S_WRITE0_ACT;
-            S_WRITE0_ACT        :   Next = (`SDRAM_DELAY_tRCD == 0) ? S_WRITE2_WR0 : S_WRITE1_NOP;
+            S_WRITE0_ACT        :   Next = S_WRITE1_NOP;
             S_WRITE1_NOP        :   Next = DelayFinished ? S_WRITE2_WR0 : S_WRITE1_NOP;
             S_WRITE2_WR0        :   Next = S_WRITE3_WR1;
             S_WRITE3_WR1        :   Next = (`SDRAM_DELAY_afterWRITE != 0) ? S_WRITE4_NOP : (
@@ -181,12 +180,9 @@ module mfp_sdram
         endcase
 
         //fifo side
-        case(State)
-            S_IDLE              :   CFIFO_REN  = NeedAction;
-            S_WRITE0_ACT        :   WFIFO_REN = 1'b1;
-            S_READ5_RD1         :   RFIFO_WEN = 1'b1;
-            default             :   { CFIFO_REN, WFIFO_REN, RFIFO_WEN } = 3'b0;
-        endcase
+        CFIFO_REN = (State == S_IDLE) && NeedAction;
+        WFIFO_REN = (State == S_WRITE0_ACT);
+        RFIFO_WEN = (State == S_READ5_RD1);
     end
 
     // SDRAM IO side
@@ -291,7 +287,7 @@ module mfp_sdram
         endcase
 
         //read data
-        case(State)
+        case(Next)
             default             :   ;
             S_READ4_RD0         :   RFIFO_WDATA [ 15:0  ] <= SDRAM_DQ;
             S_READ5_RD1         :   RFIFO_WDATA [ 31:16 ] <= SDRAM_DQ;
