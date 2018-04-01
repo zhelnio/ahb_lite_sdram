@@ -22,7 +22,7 @@
                                             >= (tRFC * fclk - 2)                        */
 `define SDRAM_DELAY_tMRD          2         /* LOAD_MODE_REGISTER to ACTIVE or REFRESH command 
                                             >= (tMRD * fclk - 2)                        */
-`define SDRAM_DELAY_tRCD          2         /* ACTIVE-to-READ or WRITE delay 
+`define SDRAM_DELAY_tRCD          0         /* ACTIVE-to-READ or WRITE delay 
                                             >= (tRCD * fclk - 1)                        */
 `define SDRAM_DELAY_tCAS          2         /* CAS delay, also depends on clock phase shift 
                                             =  (CAS)                                */

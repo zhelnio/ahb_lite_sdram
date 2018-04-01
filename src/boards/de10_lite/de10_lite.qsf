@@ -436,7 +436,15 @@ set_global_assignment -name SDC_FILE de10_lite.SDC
 set_global_assignment -name VERILOG_FILE ../de10_lite.v
 set_global_assignment -name VERILOG_FILE ../../../ahb_lite_sdram/ahb_lite_sdram.v
 set_global_assignment -name VERILOG_FILE ../../../ahb_lite_sdram/mfp_register.v
+set_global_assignment -name VERILOG_FILE ../../../ahb_lite_sdram/ahb_lite_sdram_fifo.v
+set_global_assignment -name VERILOG_FILE ../../../ahb_lite_sdram/mfp_dual_clock_ram.v
+set_global_assignment -name VERILOG_FILE ../../../ahb_lite_sdram/mfp_fifo_dc.v
+set_global_assignment -name VERILOG_FILE ../../../ahb_lite_sdram/mfp_sdram.v
+set_global_assignment -name VERILOG_FILE ../../../ahb_lite_sdram/mfp_synchronyzer.v
+
 set_global_assignment -name VERILOG_FILE ../../../debug/ahb_lite_rw_master.v
 set_global_assignment -name VERILOG_FILE ../../../debug/seven_segment.v
+
+set_global_assignment -name SEARCH_PATH ..
 
 set_global_assignment -name QIP_FILE ../pll.qip

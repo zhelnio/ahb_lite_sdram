@@ -94,8 +94,9 @@ module de10_lite(
 //=======================================================
 
     wire clk200;
+    wire SDRAM_CLK;
 
-    pll pll(MAX10_CLK1_50, DRAM_CLK, HCLK, clk200);
+    pll pll(MAX10_CLK1_50, HCLK, SDRAM_CLK, DRAM_CLK, clk200);
 
 	assign HRESETn = KEY [0];
     assign STARTADDR = { { 20 { 1'b0 }}, SW, 2'b0 };
@@ -134,7 +135,7 @@ module de10_lite(
     );
 
 	ahb_lite_sdram 
-    #(
+  /*   #(
         //for T=20ns
         .DELAY_nCKE         (10000),
         .DELAY_tREF         (390),
@@ -146,7 +147,7 @@ module de10_lite(
         .DELAY_afterREAD    (0),
         .DELAY_afterWRITE   (2),
         .COUNT_initAutoRef  (8)
-    ) 
+    ) */
     mem
     (
         .HCLK       (   HCLK        ),
@@ -163,15 +164,18 @@ module de10_lite(
         .HREADYOUT  (   HREADY      ),
         .HRESP      (   HRESP       ),
 
-        .CKE        (   DRAM_CKE                ),
-        .CSn        (   DRAM_CS_N               ),
-        .RASn       (   DRAM_RAS_N              ),
-        .CASn       (   DRAM_CAS_N              ),
-        .WEn        (   DRAM_WE_N               ),
-        .ADDR       (   DRAM_ADDR               ),
-        .BA         (   DRAM_BA                 ),
-        .DQ         (   DRAM_DQ                 ),
-        .DQM        (   {DRAM_UDQM, DRAM_LDQM}  )
+        .SDRAM_CLK  (   SDRAM_CLK               ),
+        .SDRAM_RSTn (   HRESETn                 ),
+
+        .SDRAM_CKE  (   DRAM_CKE                ),
+        .SDRAM_CSn  (   DRAM_CS_N               ),
+        .SDRAM_RASn (   DRAM_RAS_N              ),
+        .SDRAM_CASn (   DRAM_CAS_N              ),
+        .SDRAM_WEn  (   DRAM_WE_N               ),
+        .SDRAM_ADDR (   DRAM_ADDR               ),
+        .SDRAM_BA   (   DRAM_BA                 ),
+        .SDRAM_DQ   (   DRAM_DQ                 ),
+        .SDRAM_DQM  (   {DRAM_UDQM, DRAM_LDQM}  )
     );
 
 	assign { HEX5[7], HEX4[7], HEX3[7], HEX2[7], HEX1[7], HEX0[7] } = 6'b101111;

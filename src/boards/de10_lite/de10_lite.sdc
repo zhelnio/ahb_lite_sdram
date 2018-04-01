@@ -8,9 +8,10 @@ create_clock -period "50.0 MHz" [get_ports MAX10_CLK2_50]
 
 ##### Create Generated Clock
 derive_pll_clocks
-set sdram_clk  pll|altpll_component|auto_generated|pll1|clk[0]
-set cpu_clk    pll|altpll_component|auto_generated|pll1|clk[1]
-set sigtap_clk pll|altpll_component|auto_generated|pll1|clk[2]
+set cpu_clk    pll|altpll_component|auto_generated|pll1|clk[0]
+set sdram_ctrl pll|altpll_component|auto_generated|pll1|clk[1]
+set sdram_clk  pll|altpll_component|auto_generated|pll1|clk[2]
+set sigtap_clk pll|altpll_component|auto_generated|pll1|clk[3]
 create_generated_clock -name sdram_oclk -source $sdram_clk -offset 0.5 [get_ports {DRAM_CLK}]
 
 ##### Set Clock Latency

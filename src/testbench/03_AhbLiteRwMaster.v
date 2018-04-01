@@ -70,18 +70,19 @@ module test_ahb_lite_rw_master;
     //----------------------------------------------------------------------
 
     parameter tT = 20;
+    parameter tMem = 10;
     parameter phaseShift = 2;
 
     initial SDRAM_CLK_OUT = 1; 
     initial SDRAM_CLK = 0;
     initial HCLK = 0;
 
-    always #(tCK/2) SDRAM_CLK = ~SDRAM_CLK;
+    always #(tMem/2) SDRAM_CLK = ~SDRAM_CLK;
     always #(tT/2)  HCLK = ~HCLK; //main clock
 
     initial begin
         #(phaseShift) 
-        forever SDRAM_CLK_OUT = #(tCK/2) ~SDRAM_CLK_OUT;
+        forever SDRAM_CLK_OUT = #(tMem/2) ~SDRAM_CLK_OUT;
     end
 
     //----------------------------------------------------------------------

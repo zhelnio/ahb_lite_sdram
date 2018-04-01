@@ -187,7 +187,8 @@ module mfp_sdram
 
     // SDRAM IO side
     // SDRAM command data
-    localparam  CMD_NOP_NCKE        = 5'b00111,
+    localparam  CMD_RESET           = 5'b01111,
+                CMD_NOP_NCKE        = 5'b00111,
                 CMD_NOP             = 5'b10111,
                 CMD_PRECHARGEALL    = 5'b10010,
                 CMD_AUTOREFRESH     = 5'b10001,
@@ -200,7 +201,7 @@ module mfp_sdram
     reg     [ 4 : 0 ]   sdramCmdNext;
     assign  { SDRAM_CKE, SDRAM_CSn, SDRAM_RASn, SDRAM_CASn, SDRAM_WEn } = sdramCmd;
 
-    mfp_register_r #(.WIDTH(5)) cmd_r(SDRAM_CLK, SDRAM_RSTn, sdramCmdNext, 1'b1, sdramCmd);
+    mfp_register_r #(.WIDTH(5), .RESET(CMD_RESET)) cmd_r(SDRAM_CLK, SDRAM_RSTn, sdramCmdNext, 1'b1, sdramCmd);
 
     // set SDRAM command output
     always @ (*) begin

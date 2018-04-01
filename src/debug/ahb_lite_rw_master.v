@@ -56,90 +56,91 @@ module ahb_lite_rw_master
 
     reg     [  3 : 0 ]              State;
 
-    always @(posedge HCLK) begin
+
+
+    always @(posedge HCLK or negedge HRESETn) begin
         if(!HRESETn)
-            begin
-                HADDR_old   <= STARTADDR;
-                HADDR       <= STARTADDR;
-                HTRANS      <= 2'b10;   //NONSEQ
-                HWRITE      <= 1'b1;
-                State       <= 1;
-                ERRCOUNT    <= 0;
-                curErrors   <= 0;
-                status      <= 4'b1000;
-                CHKCOUNT    <= 0;
-            end
-        else 
-            case(State)
-                //init
-                // 0:
-                
-                //write
-                1:  if(HREADY) begin
-                        if(HADDR == MAX_HADDR + STARTADDR)
-                            State   <= 3;
-                        else begin
-                            HADDR_old   <= HADDR;
-                            HADDR       <= HADDR + ADDR_INCREMENT;
-                        end
-                    end
+            State <= 0;
 
-                //wait
-                3:  begin
-                        HWRITE      <= 1'b0;
-                        HTRANS      <= 2'b00;   //IDLE
-                        delay_u     <= 0;
-                        State       <= 4;
-                        status      <= 4'b0100;
-                    end
-
-                4:  begin
-                        delay_u     <= delay_u + 1;
-                        if( &delay_u )
-                             State  <= 5;
-                    end
-
-                //read and check
-                5:  begin
-                        HADDR       <= STARTADDR;
-                        HTRANS      <= 2'b10;   //NONSEQ
-                        State       <= 6;
-                    end
-
-                6:  begin
+        case(State)
+            //init
+            0:  begin
+                    HADDR_old   <= STARTADDR;
+                    HADDR       <= STARTADDR;
+                    HTRANS      <= 2'b10;   //NONSEQ
+                    HWRITE      <= 1'b1;
+                    State       <= HRESETn ? 1 : 0;
+                    ERRCOUNT    <= 0;
+                    curErrors   <= 0;
+                    status      <= 4'b1000;
+                    CHKCOUNT    <= 0;
+                end
+            //write
+            1:  if(HREADY) begin
+                    if(HADDR == MAX_HADDR + STARTADDR)
+                        State   <= 3;
+                    else begin
                         HADDR_old   <= HADDR;
                         HADDR       <= HADDR + ADDR_INCREMENT;
-                        State       <= 7;
                     end
+                end
 
-                7:  if(HREADY) begin
-                        if(HRDATA != debugValue)
-                            curErrors   <= curErrors + 1;
-                        
-                        if(HADDR == MAX_HADDR + STARTADDR) begin
-                            HTRANS      <= 2'b00;
-                            State       <= 8;
-                            end
-                        else begin
-                            HADDR_old   <= HADDR;
-                            HADDR       <= HADDR + ADDR_INCREMENT;
-                        end
-                    end
+            //wait
+            3:  begin
+                    HWRITE      <= 1'b0;
+                    HTRANS      <= 2'b00;   //IDLE
+                    delay_u     <= 0;
+                    State       <= 4;
+                    status      <= 4'b0100;
+                end
 
-                8:  if ( CHKCOUNT == READ_ITER_CNT ) begin
-                        ERRCOUNT    <= sumErrors; 
-                        State       <= ( |sumErrors ) ? 9 : 10;
+            4:  begin
+                    delay_u     <= delay_u + 1;
+                    if( &delay_u )
+                            State  <= 5;
+                end
+
+            //read and check
+            5:  begin
+                    HADDR       <= STARTADDR;
+                    HTRANS      <= 2'b10;   //NONSEQ
+                    State       <= 6;
+                end
+
+            6:  begin
+                    HADDR_old   <= HADDR;
+                    HADDR       <= HADDR + ADDR_INCREMENT;
+                    State       <= 7;
+                end
+
+            7:  if(HREADY) begin
+                    if(HRDATA != debugValue)
+                        curErrors   <= curErrors + 1;
+                    
+                    if(HADDR == MAX_HADDR + STARTADDR) begin
+                        HTRANS      <= 2'b00;
+                        State       <= 8;
                         end
                     else begin
-                        State       <= 3;
-                        CHKCOUNT    <= CHKCOUNT + 1;
-                        ERRCOUNT    <= sumErrors; 
-                        curErrors   <= 0;
+                        HADDR_old   <= HADDR;
+                        HADDR       <= HADDR + ADDR_INCREMENT;
                     end
+                end
 
-                9:  status      <= 4'b0001; //FAILED
-                10: status      <= 4'b0010; //SUCCESS
+            8:  if ( CHKCOUNT == READ_ITER_CNT ) begin
+                    ERRCOUNT    <= sumErrors; 
+                    State       <= ( |sumErrors ) ? 9 : 10;
+                    end
+                else begin
+                    State       <= 3;
+                    CHKCOUNT    <= CHKCOUNT + 1;
+                    ERRCOUNT    <= sumErrors; 
+                    curErrors   <= 0;
+                end
 
-            endcase
+            9:  status      <= 4'b0001; //FAILED
+            10: status      <= 4'b0010; //SUCCESS
+
+        endcase
     end
 endmodule
